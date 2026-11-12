@@ -1,0 +1,820 @@
+[
+  {
+    "permission": "storage",
+    "title": "Medeo · Storage",
+    "grant": "storage",
+    "actions": [
+      {
+        "method": "storage.set",
+        "args": {
+          "key": "permission-test",
+          "value": {
+            "sample": true
+          }
+        }
+      },
+      {
+        "method": "storage.get",
+        "args": {
+          "key": "permission-test"
+        }
+      },
+      {
+        "method": "storage.remove",
+        "args": {
+          "key": "permission-test"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "creation_open",
+    "title": "Medeo · Creation Open",
+    "grant": "creation_open",
+    "actions": [
+      {
+        "method": "creation.open",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "file_access",
+    "title": "Medeo · File Access",
+    "grant": {
+      "file_access": []
+    },
+    "actions": [
+      {
+        "method": "resources.choose_directories",
+        "args": {}
+      },
+      {
+        "method": "resources.list",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "file_full_access",
+    "title": "Medeo · File Full Access",
+    "grant": {
+      "file_full_access": []
+    },
+    "actions": [
+      {
+        "method": "files.trash_direct",
+        "args": {
+          "items": []
+        }
+      }
+    ]
+  },
+  {
+    "permission": "network",
+    "title": "Medeo · Network",
+    "grant": {
+      "network": [
+        "http://127.0.0.1:8765"
+      ]
+    },
+    "actions": [
+      {
+        "method": "network.request",
+        "args": {
+          "url": "http://127.0.0.1:8765/",
+          "method": "GET"
+        }
+      },
+      {
+        "method": "network.read",
+        "args": {
+          "id": "$last.id",
+          "offset": 0,
+          "length": 32768
+        }
+      },
+      {
+        "method": "network.origins",
+        "args": {}
+      },
+      {
+        "method": "network.request_origin",
+        "args": {
+          "origin": "http://127.0.0.1:8765",
+          "reason": "Permission test service"
+        }
+      },
+      {
+        "method": "network.revoke_origin",
+        "args": {
+          "origin": "http://127.0.0.1:8765"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "agent_api",
+    "title": "Medeo · Agent Api",
+    "grant": "agent_api",
+    "actions": [
+      {
+        "method": "agent.models",
+        "args": {}
+      },
+      {
+        "method": "agent.start",
+        "args": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "Hello"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "permission": "clipboard_read",
+    "title": "Medeo · Clipboard Read",
+    "grant": "clipboard_read",
+    "actions": [
+      {
+        "method": "clipboard.read",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "clipboard_write",
+    "title": "Medeo · Clipboard Write",
+    "grant": "clipboard_write",
+    "actions": [
+      {
+        "method": "clipboard.write",
+        "args": {
+          "text": "Medeo permission fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "screen_capture",
+    "title": "Medeo · Screen Capture",
+    "grant": "screen_capture",
+    "actions": [
+      {
+        "method": "capture.status",
+        "args": {}
+      },
+      {
+        "method": "capture.state",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "camera",
+    "title": "Medeo · Camera",
+    "grant": "camera",
+    "actions": [
+      {
+        "method": "camera.status",
+        "args": {}
+      },
+      {
+        "method": "camera.start",
+        "args": {
+          "max_seconds": 3
+        },
+        "manual": true
+      },
+      {
+        "method": "camera.stop",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "microphone",
+    "title": "Medeo · Microphone",
+    "grant": "microphone",
+    "actions": [
+      {
+        "method": "microphone.status",
+        "args": {}
+      },
+      {
+        "method": "microphone.start",
+        "args": {
+          "max_seconds": 3
+        },
+        "manual": true
+      },
+      {
+        "method": "microphone.stop",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "system_audio",
+    "title": "Medeo · System Audio",
+    "grant": "system_audio",
+    "actions": [
+      {
+        "method": "system_audio.status",
+        "args": {}
+      },
+      {
+        "method": "system_audio.start",
+        "args": {
+          "max_seconds": 3
+        },
+        "manual": true
+      },
+      {
+        "method": "system_audio.stop",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "applications",
+    "title": "Medeo · Applications",
+    "grant": "applications",
+    "actions": [
+      {
+        "method": "applications.list",
+        "args": {}
+      },
+      {
+        "method": "applications.state",
+        "args": {}
+      },
+      {
+        "method": "applications.icons",
+        "args": {
+          "ids": []
+        }
+      }
+    ]
+  },
+  {
+    "permission": "plugin_commands",
+    "title": "Medeo · Plugin Commands",
+    "grant": "plugin_commands",
+    "actions": [
+      {
+        "method": "plugins.commands",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "global_shortcuts",
+    "title": "Medeo · Global Shortcuts",
+    "grant": "global_shortcuts",
+    "actions": [
+      {
+        "method": "shortcuts.register",
+        "args": {
+          "id": "fixture",
+          "accelerator": "CommandOrControl+Alt+Shift+F10"
+        }
+      },
+      {
+        "method": "shortcuts.list",
+        "args": {}
+      },
+      {
+        "method": "shortcuts.events",
+        "args": {}
+      },
+      {
+        "method": "shortcuts.unregister",
+        "args": {
+          "id": "fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "notifications",
+    "title": "Medeo · Notifications",
+    "grant": "notifications",
+    "actions": [
+      {
+        "method": "notifications.show",
+        "args": {
+          "id": "fixture",
+          "title": "Permission test",
+          "body": "Medeo test notification"
+        }
+      },
+      {
+        "method": "notifications.close",
+        "args": {
+          "id": "fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "tray",
+    "title": "Medeo · Tray",
+    "grant": "tray",
+    "actions": [
+      {
+        "method": "tray.set",
+        "args": {
+          "title": "Medeo Test",
+          "items": [
+            {
+              "id": "fixture",
+              "title": "Test action"
+            }
+          ]
+        }
+      },
+      {
+        "method": "tray.events",
+        "args": {}
+      },
+      {
+        "method": "tray.remove",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "app_windows",
+    "title": "Medeo · App Windows",
+    "grant": "app_windows",
+    "actions": [
+      {
+        "method": "windows.open",
+        "args": {
+          "id": "fixture",
+          "entry": "ui/secondary.html",
+          "title": "Medeo window fixture",
+          "width": 680,
+          "height": 480
+        }
+      },
+      {
+        "method": "windows.list",
+        "args": {}
+      },
+      {
+        "method": "windows.close",
+        "args": {
+          "id": "fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "accessibility",
+    "title": "Medeo · Accessibility",
+    "grant": "accessibility",
+    "actions": [
+      {
+        "method": "accessibility.status",
+        "args": {}
+      },
+      {
+        "method": "accessibility.request",
+        "args": {},
+        "manual": true
+      },
+      {
+        "method": "accessibility.windows",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "window_management",
+    "title": "Medeo · Window Management",
+    "grant": "window_management",
+    "actions": [
+      {
+        "method": "window_management.status",
+        "args": {}
+      },
+      {
+        "method": "window_management.screens",
+        "args": {}
+      },
+      {
+        "method": "window_management.pointer",
+        "args": {}
+      },
+      {
+        "method": "window_management.request",
+        "args": {},
+        "manual": true
+      },
+      {
+        "method": "window_management.focused",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "input_method",
+    "title": "Medeo · Input Method",
+    "grant": "input_method",
+    "actions": [
+      {
+        "method": "input_method.status",
+        "args": {}
+      },
+      {
+        "method": "input_method.configure",
+        "args": {
+          "name": "Medeo Test"
+        }
+      },
+      {
+        "method": "input_method.disable",
+        "args": {}
+      },
+      {
+        "method": "input_method.system",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "external_open",
+    "title": "Medeo · External Open",
+    "grant": {
+      "external_open": [
+        "https://example.com"
+      ]
+    },
+    "actions": [
+      {
+        "method": "external.open",
+        "args": {
+          "url": "https://example.com"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "browser_view",
+    "title": "Medeo · Browser View",
+    "grant": {
+      "browser_view": [
+        "http://127.0.0.1:8765"
+      ]
+    },
+    "actions": [
+      {
+        "method": "browser.open",
+        "args": {
+          "id": "fixture",
+          "url": "http://127.0.0.1:8765",
+          "width": 500,
+          "height": 400
+        }
+      },
+      {
+        "method": "browser.state",
+        "args": {
+          "id": "fixture"
+        }
+      },
+      {
+        "method": "browser.close",
+        "args": {
+          "id": "fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "system_info",
+    "title": "Medeo · System Info",
+    "grant": "system_info",
+    "actions": [
+      {
+        "method": "system.info",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "secrets",
+    "title": "Medeo · Secrets",
+    "grant": "secrets",
+    "actions": [
+      {
+        "method": "secrets.set",
+        "args": {
+          "key": "fixture",
+          "value": "synthetic-secret"
+        }
+      },
+      {
+        "method": "secrets.result",
+        "args": {
+          "id": "$last.id"
+        }
+      },
+      {
+        "method": "secrets.get",
+        "args": {
+          "key": "fixture"
+        }
+      },
+      {
+        "method": "secrets.result",
+        "args": {
+          "id": "$last.id"
+        }
+      },
+      {
+        "method": "secrets.remove",
+        "args": {
+          "key": "fixture"
+        }
+      },
+      {
+        "method": "secrets.result",
+        "args": {
+          "id": "$last.id"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "background_tasks",
+    "title": "Medeo · Background Tasks",
+    "grant": "background_tasks",
+    "actions": [
+      {
+        "method": "background.schedule",
+        "args": {
+          "id": "fixture",
+          "delay_ms": 0,
+          "interval_ms": 0,
+          "payload": null
+        }
+      },
+      {
+        "method": "background.list",
+        "args": {}
+      },
+      {
+        "method": "background.events",
+        "args": {}
+      },
+      {
+        "method": "background.cancel",
+        "args": {
+          "id": "fixture"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "power",
+    "title": "Medeo · Power",
+    "grant": "power",
+    "actions": [
+      {
+        "method": "power.start",
+        "args": {
+          "type": "prevent-app-suspension"
+        }
+      },
+      {
+        "method": "power.state",
+        "args": {}
+      },
+      {
+        "method": "power.stop",
+        "args": {
+          "id": "$last.id"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "process_spawn",
+    "title": "Medeo · Process Spawn",
+    "grant": {
+      "process_spawn": [
+        "/usr/bin/printf",
+        "C:/Windows/System32/cmd.exe"
+      ]
+    },
+    "actions": [
+      {
+        "method": "process.start",
+        "args": {
+          "executable": "/usr/bin/printf",
+          "arguments": [
+            "Medeo permission fixture"
+          ],
+          "timeout_ms": 5000
+        }
+      },
+      {
+        "method": "process.state",
+        "args": {
+          "id": "$last.id"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "approvals",
+    "title": "Medeo · Action Approval",
+    "grant": {
+      "approvals": [
+        "run_command"
+      ]
+    },
+    "actions": [
+      {
+        "method": "approvals.request",
+        "args": {
+          "action": "run_command",
+          "title": "Run a command",
+          "detail": "Medeo permission fixture",
+          "preview": {
+            "kind": "command",
+            "text": "git status"
+          },
+          "rule_key": "bash:git status",
+          "rule_pattern": "bash:git *"
+        }
+      },
+      {
+        "method": "approvals.rules",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "local_server",
+    "title": "Medeo · Local Server",
+    "grant": "local_server",
+    "actions": [
+      {
+        "method": "server.start",
+        "args": {
+          "port": 0,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/health"
+            },
+            {
+              "method": "POST",
+              "path": "/echo"
+            }
+          ]
+        }
+      },
+      {
+        "method": "server.state",
+        "args": {
+          "id": "$last.id"
+        }
+      },
+      {
+        "method": "server.events",
+        "args": {
+          "id": "$last.id"
+        }
+      },
+      {
+        "method": "server.stop",
+        "args": {
+          "id": "$last.id"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "printing",
+    "title": "Medeo · Printing",
+    "grant": "printing",
+    "actions": [
+      {
+        "method": "printing.print",
+        "args": {
+          "text": "Owned print fixture"
+        },
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "contacts",
+    "title": "Medeo · Contacts",
+    "grant": "contacts",
+    "actions": [
+      {
+        "method": "contacts.status",
+        "args": {}
+      },
+      {
+        "method": "contacts.request",
+        "args": {},
+        "manual": true
+      },
+      {
+        "method": "contacts.list",
+        "args": {
+          "query": "",
+          "limit": 10
+        },
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "calendar",
+    "title": "Medeo · Calendar",
+    "grant": "calendar",
+    "actions": [
+      {
+        "method": "calendar.status",
+        "args": {}
+      },
+      {
+        "method": "calendar.request",
+        "args": {},
+        "manual": true
+      },
+      {
+        "method": "calendar.list",
+        "args": {
+          "start_ms": 0,
+          "end_ms": 86400000,
+          "limit": 10
+        },
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "location",
+    "title": "Medeo · Location",
+    "grant": "location",
+    "actions": [
+      {
+        "method": "location.status",
+        "args": {}
+      },
+      {
+        "method": "location.request",
+        "args": {},
+        "manual": true
+      },
+      {
+        "method": "location.current",
+        "args": {},
+        "manual": true
+      }
+    ]
+  },
+  {
+    "permission": "device_access",
+    "title": "Medeo · Device Access",
+    "grant": "device_access",
+    "actions": [
+      {
+        "method": "devices.choose",
+        "args": {
+          "transport": "serial"
+        },
+        "manual": true
+      },
+      {
+        "method": "devices.list",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "permission": "node",
+    "title": "Medeo · Node",
+    "grant": "node",
+    "runtime": "node",
+    "actions": []
+  }
+]

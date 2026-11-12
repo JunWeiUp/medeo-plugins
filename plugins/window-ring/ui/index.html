@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="/_medeo/theme.css"><link rel="stylesheet" href="style.css"><title>Window Ring</title></head>
+<body class="main">
+  <header class="top">
+    <div><h1 id="title" data-testid="window-ring.title"></h1><p id="intro" class="muted" data-testid="window-ring.intro"></p></div>
+    <span id="permission-pill" class="pill" data-testid="window-ring.permission.pill" hidden></span>
+  </header>
+
+  <!-- The ring as a diagram: point at a direction and the little screen shows what it does. -->
+  <section class="hero" data-testid="window-ring.demo">
+    <div class="dial-box">
+      <svg id="dial" class="dial" viewBox="-120 -120 240 240" tabindex="0" role="radiogroup" data-testid="window-ring.demo.dial"></svg>
+      <p id="dial-hint" class="dial-hint muted"></p>
+    </div>
+    <div class="stage">
+      <div class="screen" data-testid="window-ring.demo.screen">
+        <div class="menubar"><i></i><i></i><i></i></div>
+        <div class="desk">
+          <div id="ghost" class="win ghost"></div>
+          <div id="win" class="win" data-testid="window-ring.demo.window"><div class="bar"><i></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="caption">
+        <div><b id="demo-name" data-testid="window-ring.demo.name"></b><small id="demo-move" class="muted"></small></div>
+        <span id="demo-keys" class="keys" data-testid="window-ring.demo.keys"></span>
+      </div>
+      <ol class="steps" id="steps" data-testid="window-ring.steps"></ol>
+    </div>
+  </section>
+
+  <section class="card" data-testid="window-ring.permission">
+    <div class="row"><b id="permission-title"></b><span id="permission-badge" class="badge" data-testid="window-ring.permission.badge"></span></div>
+    <p id="permission-text" class="muted" data-testid="window-ring.permission.text"></p>
+    <button id="grant" class="primary" data-testid="window-ring.permission.grant" hidden></button>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <div><b id="shortcuts-title"></b><p id="shortcuts-hint" class="muted small"></p></div>
+      <button id="reset-all" class="ghost-button" data-testid="window-ring.shortcuts.reset-all" hidden></button>
+    </div>
+    <p id="storage-note" class="note error" data-testid="window-ring.shortcuts.storage" hidden></p>
+    <div id="groups" data-testid="window-ring.bindings"></div>
+  </section>
+
+  <section class="card">
+    <label class="row toggle">
+      <span><b id="tray-title"></b><small id="tray-text" class="muted"></small></span>
+      <input type="checkbox" id="tray" role="switch" data-testid="window-ring.tray.toggle">
+    </label>
+  </section>
+
+  <p id="settings-hint" class="muted small"></p>
+  <p id="last" class="muted" data-testid="window-ring.last"></p>
+  <script type="module" src="index.js"></script>
+</body></html>

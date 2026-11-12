@@ -1,0 +1,125 @@
+{
+  "id": "app.medeo.screenshot",
+  "name": "Screenshot",
+  "description": "Capture any part of the screen and annotate it in place: arrows, shapes, text, numbers, censor, spotlight, stamps and measuring. Copy, save, read text and QR codes, or beautify it on a gradient.",
+  "icon": "icon.svg",
+  "version": "1.0.1",
+  "api_version": 1,
+  "runtime": "node",
+  "platforms": [
+    "macos"
+  ],
+  "worker": "main.mjs",
+  "permissions": [
+    "node",
+    "app_windows",
+    "window_management",
+    "screen_capture",
+    "global_shortcuts",
+    "tray",
+    "notifications"
+  ],
+  "activation_events": [
+    "onStartup"
+  ],
+  "commands": [
+    {
+      "id": "screenshot.capture",
+      "title": "Capture Area"
+    },
+    {
+      "id": "screenshot.capture-full",
+      "title": "Capture Full Screen"
+    },
+    {
+      "id": "screenshot.capture-quick",
+      "title": "Quick Capture"
+    },
+    {
+      "id": "screenshot.capture-ocr",
+      "title": "Capture Text (OCR)"
+    },
+    {
+      "id": "screenshot.settings",
+      "title": "Screenshot Settings"
+    },
+    {
+      "id": "screenshot.folder",
+      "title": "Open Screenshots Folder"
+    }
+  ],
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json",
+      "zh-TW": "locales/zh-TW.json"
+    }
+  },
+  "contributes": {
+    "launcher": {
+      "keyword": "shot",
+      "commands": [
+        {
+          "command": "screenshot.capture",
+          "pinnable": true,
+          "keywords": [
+            "screenshot",
+            "capture",
+            "area",
+            "截图",
+            "截屏"
+          ]
+        },
+        {
+          "command": "screenshot.capture-full",
+          "keywords": [
+            "screenshot",
+            "full screen",
+            "全屏",
+            "截图"
+          ]
+        },
+        {
+          "command": "screenshot.capture-quick",
+          "keywords": [
+            "screenshot",
+            "quick",
+            "快速",
+            "截图"
+          ]
+        },
+        {
+          "command": "screenshot.capture-ocr",
+          "pinnable": true,
+          "keywords": [
+            "ocr",
+            "text",
+            "qr",
+            "识字",
+            "文字识别",
+            "二维码"
+          ]
+        },
+        {
+          "command": "screenshot.folder",
+          "keywords": [
+            "screenshot",
+            "folder",
+            "截图",
+            "文件夹"
+          ]
+        },
+        {
+          "command": "screenshot.settings",
+          "keywords": [
+            "screenshot",
+            "settings",
+            "截图",
+            "设置"
+          ]
+        }
+      ]
+    }
+  }
+}

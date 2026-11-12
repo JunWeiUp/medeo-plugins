@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffc24a"/>
+      <stop offset="1" stop-color="#f2711c"/>
+    </linearGradient>
+    <clipPath id="flask"><path d="M106 60h44v42l46 78c8 14-2 30-18 30H78c-16 0-26-16-18-30l46-78z"/></clipPath>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <circle cx="206" cy="48" r="66" fill="#ffffff" opacity="0.08"/>
+  <path d="M106 60h44v42l46 78c8 14-2 30-18 30H78c-16 0-26-16-18-30l46-78z" fill="#ffffff" opacity="0.28"/>
+  <g clip-path="url(#flask)"><path d="M40 150c30-12 58 12 88 0s58-12 88 0v80H40z" fill="#ffffff"/></g>
+  <path d="M106 60h44v42l46 78c8 14-2 30-18 30H78c-16 0-26-16-18-30l46-78z" fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round"/>
+  <rect x="96" y="48" width="64" height="14" rx="7" fill="#ffffff"/>
+  <circle cx="116" cy="178" r="8" fill="#f2711c" opacity="0.55"/>
+  <circle cx="144" cy="192" r="6" fill="#f2711c" opacity="0.55"/>
+  <circle cx="132" cy="120" r="7" fill="#ffffff"/>
+  <circle cx="144" cy="96" r="5" fill="#ffffff" opacity="0.9"/>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "id": "app.medeo.example.input-method",
+  "name": "Input Method Example",
+  "version": "1.0.0",
+  "api_version": 1,
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "input_method",
+    "storage"
+  ],
+  "commands": [],
+  "activation_events": [
+    "onStartup"
+  ]
+}

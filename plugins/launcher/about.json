@@ -1,0 +1,7 @@
+{
+  "author": "Medeo",
+  "license": "MIT",
+  "homepage": "https://medeo-desktop.play.one2x.ai/",
+  "repository": "https://github.com/one2x-ai/medeo-desktop-plugin-sdk/tree/main/plugins/launcher",
+  "bugs": "https://github.com/one2x-ai/medeo-desktop-plugin-sdk/issues"
+}

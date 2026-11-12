@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="light dark"><link rel="stylesheet" href="style.css"><title>Launcher</title></head><body>
+<div class="panel" id="panel">
+  <label class="bar">
+    <svg class="glass" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    <span id="scope" class="scope" data-testid="launcher.scope" hidden></span>
+    <input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="200" data-testid="launcher.query" aria-controls="list" aria-autocomplete="list">
+  </label>
+  <div class="body" id="body">
+    <main id="list" class="list" role="listbox" data-testid="launcher.list"></main>
+    <aside id="detail" class="detail" data-testid="launcher.detail" hidden></aside>
+  </div>
+  <div id="menu" class="menu" role="menu" data-testid="launcher.menu" hidden></div>
+  <div id="toast" class="toast" data-testid="launcher.toast" hidden></div>
+  <footer class="foot">
+    <span class="who" id="who" data-testid="launcher.who"></span>
+    <span class="k primary" id="primary" data-testid="launcher.primary"></span>
+    <span class="sep"></span>
+    <span class="k" id="more"></span>
+  </footer>
+</div>
+<script type="module" src="index.js"></script>
+</body></html>

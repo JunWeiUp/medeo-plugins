@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><link rel="stylesheet" href="style.css"><title>Clipboard</title></head><body>
+<div class="app">
+  <header class="titlebar">
+    <button id="back" class="icon-btn" data-testid="clipboard.header.back" hidden><i class="icon" data-icon="back"></i></button>
+    <b id="title"></b>
+    <span class="spacer"></span>
+    <button id="pause" class="icon-btn" data-testid="clipboard.header.pause"><i class="icon"></i></button>
+    <button id="gear" class="icon-btn" data-testid="clipboard.header.settings"><i class="icon" data-icon="gear"></i></button>
+  </header>
+  <section id="history" class="view">
+    <div class="tools">
+      <label class="search"><i class="icon" data-icon="search"></i><input id="search" type="search" autocomplete="off" spellcheck="false" data-testid="clipboard.search.input"></label>
+      <nav id="filters" class="tabs" data-testid="clipboard.filters"></nav>
+    </div>
+    <div id="banner" class="banner" data-testid="clipboard.status" hidden><span></span><button class="link" hidden></button></div>
+    <main id="list" class="list" data-testid="clipboard.list"></main>
+    <div id="empty" class="empty" data-testid="clipboard.empty" hidden><i class="icon" data-icon="clipboard"></i><b></b><p></p></div>
+    <footer class="footer"><span id="count" data-testid="clipboard.footer.count"></span><span id="hint" class="hint"></span></footer>
+  </section>
+  <section id="settings" class="view settings" data-testid="clipboard.settings" hidden></section>
+</div>
+<dialog id="confirm" class="sheet" data-testid="clipboard.confirm">
+  <h2 id="confirm-title"></h2><p id="confirm-body"></p>
+  <div class="sheet-actions"><button id="confirm-cancel" class="pill" data-testid="clipboard.confirm.cancel"></button><button id="confirm-ok" class="cta danger" data-testid="clipboard.confirm.ok"></button></div>
+</dialog>
+<div id="toast" class="toast" role="status" data-testid="clipboard.toast" hidden></div>
+<script src="index.js" type="module"></script></body></html>

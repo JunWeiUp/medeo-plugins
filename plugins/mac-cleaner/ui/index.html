@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><link rel="stylesheet" href="style.css"><title>Mac Cleaner</title></head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-scroll">
+      <nav id="primary" data-testid="cleaner.nav"></nav>
+      <h3 id="categories-title"></h3>
+      <nav id="categories"></nav>
+      <nav id="secondary"></nav>
+    </div>
+    <footer class="disk">
+      <div class="disk-head"><i class="icon" data-icon="drive"></i><b id="disk-title"></b><span id="disk-free"></span></div>
+      <div class="bar"><span id="disk-bar"></span></div>
+      <small id="disk-total"></small>
+    </footer>
+  </aside>
+  <main>
+    <div class="toolbar" id="toolbar">
+      <button id="rescan" class="pill" data-testid="cleaner.scan"><i class="icon"></i><span></span></button>
+      <div class="menu-anchor"><button id="sort" class="pill" data-testid="cleaner.sort"><i class="icon" data-icon="sort"></i><span></span><i class="icon small" data-icon="chevron"></i></button><div id="sort-menu" class="menu" role="menu" hidden></div></div>
+      <label class="pill switch" data-testid="cleaner.safe-only"><i class="icon" data-icon="shield"></i><span id="safe-label"></span><input type="checkbox" id="safe-only"><span class="track"></span></label>
+      <div class="spacer"></div>
+      <label class="search"><i class="icon" data-icon="search"></i><input id="search" type="search" data-testid="cleaner.search"></label>
+      <button id="clean" class="cta" data-testid="cleaner.clean"><i class="icon" data-icon="trash"></i><span></span></button>
+    </div>
+    <div id="banner" class="banner" hidden><span class="spinner"></span><b id="banner-title"></b><span id="banner-found" data-testid="cleaner.status"></span><div class="bar indeterminate"><span></span></div></div>
+    <section id="list" class="table">
+      <div class="thead" id="thead"></div>
+      <div class="tbody" id="tbody" data-testid="cleaner.rows"><div id="spacer"></div><div id="rows"></div></div>
+      <div id="empty" class="empty" hidden><b></b><p></p></div>
+      <div id="welcome" class="hero welcome" data-testid="cleaner.welcome" hidden></div>
+    </section>
+    <section id="general" class="general" data-testid="cleaner.general" hidden>
+      <header class="general-head">
+        <div class="general-figures"><small id="g-title"></small><h1 id="g-total" data-testid="cleaner.general.total"></h1><div id="g-progress" class="bar indeterminate" hidden><span></span></div><small id="g-label"></small></div>
+        <div class="actions" id="g-actions"></div>
+      </header>
+      <div id="g-body" class="general-body"></div>
+    </section>
+    <section id="disk" class="general analysis" data-testid="cleaner.disk" hidden>
+      <header class="general-head">
+        <div class="general-figures"><small id="d-title"></small><h1 id="d-total" data-testid="cleaner.disk.total"></h1><small id="d-label"></small></div>
+        <div class="actions" id="d-actions"></div>
+      </header>
+      <div id="d-body" class="analysis-body"></div>
+    </section>
+    <section id="settings" class="settings" hidden></section>
+  </main>
+</div>
+<dialog id="confirm" class="sheet" data-testid="cleaner.confirm"></dialog>
+<dialog id="progress-sheet" class="sheet small"></dialog>
+<div id="ctx" class="menu ctx" role="menu" data-testid="cleaner.ctx" hidden></div>
+<div id="toast" class="toast" role="status" data-testid="cleaner.toast" hidden></div>
+<script src="index.js" type="module"></script></body></html>

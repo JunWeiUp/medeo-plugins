@@ -1,0 +1,109 @@
+{
+  "id": "app.medeo.clipboard",
+  "name": "Clipboard",
+  "description": "Keeps everything you copy — text, rich text, images and files. Open it from the menu bar or with ⌥C, star and annotate items, and paste straight into the app you are in.",
+  "icon": "icon.svg",
+  "version": "1.3.1",
+  "api_version": 1,
+  "runtime": "node",
+  "platforms": [
+    "macos"
+  ],
+  "worker": "main.mjs",
+  "permissions": [
+    "node",
+    "global_shortcuts",
+    "tray",
+    "app_windows"
+  ],
+  "activation_events": [
+    "onStartup"
+  ],
+  "commands": [
+    {
+      "id": "clipboard.open",
+      "title": "Open Clipboard"
+    },
+    {
+      "id": "clipboard.favorites",
+      "title": "Open Favorites"
+    },
+    {
+      "id": "clipboard.paste-plain",
+      "title": "Paste Latest as Plain Text"
+    },
+    {
+      "id": "clipboard.toggle-pause",
+      "title": "Pause or Resume Recording"
+    },
+    {
+      "id": "clipboard.add",
+      "title": "Copy to Clipboard"
+    }
+  ],
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json",
+      "zh-TW": "locales/zh-TW.json"
+    }
+  },
+  "contributes": {
+    "launcher": {
+      "keyword": "clip",
+      "provider": {
+        "types": [
+          "text",
+          "url",
+          "file",
+          "image"
+        ]
+      },
+      "commands": [
+        {
+          "command": "clipboard.open",
+          "pinnable": true,
+          "keywords": [
+            "clipboard",
+            "history",
+            "paste"
+          ]
+        },
+        {
+          "command": "clipboard.favorites",
+          "pinnable": true,
+          "keywords": [
+            "clipboard",
+            "starred"
+          ]
+        },
+        {
+          "command": "clipboard.paste-plain",
+          "keywords": [
+            "paste",
+            "plain"
+          ]
+        },
+        {
+          "command": "clipboard.toggle-pause",
+          "keywords": [
+            "clipboard",
+            "pause"
+          ]
+        },
+        {
+          "command": "clipboard.add",
+          "accepts": [
+            "text",
+            "url",
+            "file"
+          ],
+          "keywords": [
+            "copy"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "id": "app.medeo.window-ring",
+  "name": "Window Ring",
+  "description": "Move and resize the window you are in with a radial menu or a shortcut: halves, quarters, thirds, maximize, center and the next display, with a live preview, cycles and undo.",
+  "icon": "icon.svg",
+  "version": "1.2.2",
+  "api_version": 1,
+  "platforms": [
+    "macos"
+  ],
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "window_management",
+    "global_shortcuts",
+    "app_windows",
+    "storage",
+    "tray"
+  ],
+  "activation_events": [
+    "onStartup"
+  ],
+  "commands": [
+    {
+      "id": "window-ring.open",
+      "title": "Open the Ring"
+    },
+    {
+      "id": "window-ring.apply",
+      "title": "Apply a Layout"
+    },
+    {
+      "id": "window-ring.state",
+      "title": "Show Status"
+    }
+  ],
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "gap": {
+          "type": "number",
+          "default": 0,
+          "title": "Gap between windows (points)",
+          "description": "0 to 64"
+        },
+        "cycles": {
+          "type": "boolean",
+          "default": true,
+          "title": "Press a shortcut again to cycle sizes",
+          "description": "Left/right: ½ → ⅔ → ⅓; maximize: full → almost full"
+        }
+      }
+    },
+    "launcher": {
+      "keyword": "win",
+      "commands": [
+        {
+          "command": "window-ring.apply",
+          "subtitle": "Move or resize the window you are in",
+          "pinnable": true,
+          "expand": "action",
+          "keywords": [
+            "window",
+            "layout",
+            "resize",
+            "snap"
+          ],
+          "arguments": [
+            {
+              "name": "action",
+              "type": "enum",
+              "title": "Layout",
+              "options": [
+                {
+                  "value": "maximize",
+                  "title": "Maximize",
+                  "icon": "ui/layouts/maximize.svg",
+                  "keywords": [
+                    "maximize"
+                  ]
+                },
+                {
+                  "value": "almost-maximize",
+                  "title": "Almost maximize",
+                  "icon": "ui/layouts/almost-maximize.svg",
+                  "keywords": [
+                    "almost",
+                    "maximize"
+                  ]
+                },
+                {
+                  "value": "center",
+                  "title": "Center",
+                  "icon": "ui/layouts/center.svg",
+                  "keywords": [
+                    "center"
+                  ]
+                },
+                {
+                  "value": "left-half",
+                  "title": "Left half",
+                  "icon": "ui/layouts/left-half.svg",
+                  "keywords": [
+                    "left",
+                    "half"
+                  ]
+                },
+                {
+                  "value": "right-half",
+                  "title": "Right half",
+                  "icon": "ui/layouts/right-half.svg",
+                  "keywords": [
+                    "right",
+                    "half"
+                  ]
+                },
+                {
+                  "value": "top-half",
+                  "title": "Top half",
+                  "icon": "ui/layouts/top-half.svg",
+                  "keywords": [
+                    "top",
+                    "half"
+                  ]
+                },
+                {
+                  "value": "bottom-half",
+                  "title": "Bottom half",
+                  "icon": "ui/layouts/bottom-half.svg",
+                  "keywords": [
+                    "bottom",
+                    "half"
+                  ]
+                },
+                {
+                  "value": "top-left",
+                  "title": "Top left",
+                  "icon": "ui/layouts/top-left.svg",
+                  "keywords": [
+                    "top",
+                    "left"
+                  ]
+                },
+                {
+                  "value": "top-right",
+                  "title": "Top right",
+                  "icon": "ui/layouts/top-right.svg",
+                  "keywords": [
+                    "top",
+                    "right"
+                  ]
+                },
+                {
+                  "value": "bottom-left",
+                  "title": "Bottom left",
+                  "icon": "ui/layouts/bottom-left.svg",
+                  "keywords": [
+                    "bottom",
+                    "left"
+                  ]
+                },
+                {
+                  "value": "bottom-right",
+                  "title": "Bottom right",
+                  "icon": "ui/layouts/bottom-right.svg",
+                  "keywords": [
+                    "bottom",
+                    "right"
+                  ]
+                },
+                {
+                  "value": "left-third",
+                  "title": "Left third",
+                  "icon": "ui/layouts/left-third.svg",
+                  "keywords": [
+                    "left",
+                    "third"
+                  ]
+                },
+                {
+                  "value": "center-third",
+                  "title": "Center third",
+                  "icon": "ui/layouts/center-third.svg",
+                  "keywords": [
+                    "center",
+                    "third"
+                  ]
+                },
+                {
+                  "value": "right-third",
+                  "title": "Right third",
+                  "icon": "ui/layouts/right-third.svg",
+                  "keywords": [
+                    "right",
+                    "third"
+                  ]
+                },
+                {
+                  "value": "left-two-thirds",
+                  "title": "Left two thirds",
+                  "icon": "ui/layouts/left-two-thirds.svg",
+                  "keywords": [
+                    "left",
+                    "two",
+                    "thirds"
+                  ]
+                },
+                {
+                  "value": "right-two-thirds",
+                  "title": "Right two thirds",
+                  "icon": "ui/layouts/right-two-thirds.svg",
+                  "keywords": [
+                    "right",
+                    "two",
+                    "thirds"
+                  ]
+                },
+                {
+                  "value": "next-display",
+                  "title": "Next display",
+                  "icon": "ui/layouts/next-display.svg",
+                  "keywords": [
+                    "next",
+                    "display"
+                  ]
+                },
+                {
+                  "value": "undo",
+                  "title": "Undo",
+                  "icon": "ui/layouts/undo.svg",
+                  "keywords": [
+                    "undo"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "command": "window-ring.open",
+          "pinnable": true,
+          "keywords": [
+            "window",
+            "ring"
+          ]
+        }
+      ]
+    }
+  },
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json",
+      "zh-TW": "locales/zh-TW.json"
+    }
+  }
+}

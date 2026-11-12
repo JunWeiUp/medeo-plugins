@@ -1,0 +1,88 @@
+:root { color-scheme: light dark; --accent: #2a7fd4; --muted: color-mix(in srgb, CanvasText 55%, transparent); --line: color-mix(in srgb, CanvasText 12%, transparent); --soft: color-mix(in srgb, CanvasText 5%, transparent); --danger: #c0392b; }
+* { box-sizing: border-box; }
+body.main { margin: 0; padding: 22px 24px 28px; font: 13px/1.5 system-ui, -apple-system, sans-serif; background: Canvas; color: CanvasText; max-width: 940px; margin: 0 auto; }
+h1 { font-size: 20px; margin: 0 0 2px; }
+h3 { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+.muted { color: var(--muted); margin: 4px 0; }
+.small { font-size: 12px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.pill { font-size: 12px; padding: 2px 10px; border-radius: 99px; background: color-mix(in srgb, #e5a100 22%, transparent); color: #a46f00; white-space: nowrap; }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin: 14px 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--line); }
+.badge.ok { background: color-mix(in srgb, #2fb36b 22%, transparent); color: #1f8a50; }
+.badge.warn { background: color-mix(in srgb, #e5a100 22%, transparent); color: #a46f00; }
+button { font: inherit; cursor: pointer; }
+button.primary { margin-top: 6px; padding: 5px 14px; border-radius: 7px; border: 0; background: var(--accent); color: #fff; }
+.ghost-button { padding: 3px 10px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: inherit; white-space: nowrap; }
+
+/* ---- the diagram: dial on the left, a little screen on the right */
+.hero { display: grid; grid-template-columns: 250px 1fr; gap: 24px; align-items: center; margin: 16px 0; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), var(--soft)); border: 1px solid var(--line); }
+.dial-box { text-align: center; }
+.dial { width: 230px; height: 230px; outline: none; touch-action: none; filter: drop-shadow(0 8px 20px rgba(0,0,0,.18)); }
+.dial:focus-visible .track { stroke: var(--accent); stroke-width: 2; }
+.dial .track { fill: color-mix(in srgb, Canvas 86%, transparent); stroke: var(--line); }
+.dial .seg path:first-child, .dial .hub circle { fill: transparent; transition: fill .15s ease; cursor: pointer; }
+.dial .hub circle { fill: color-mix(in srgb, CanvasText 6%, Canvas); stroke: var(--line); }
+.dial .arrow { fill: none; stroke: var(--muted); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; transition: stroke .15s ease; }
+.dial .seg.on path:first-child, .dial .hub.on circle { fill: var(--accent); }
+.dial .seg.on .arrow { stroke: #fff; }
+.dial-hint { margin-top: 6px; font-size: 12px; white-space: nowrap; }
+.stage { min-width: 0; }
+.screen { position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, Canvas), color-mix(in srgb, #8e5bd8 26%, Canvas)); box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.menubar { height: 7%; background: color-mix(in srgb, Canvas 70%, transparent); display: flex; gap: 4px; align-items: center; padding: 0 8px; }
+.menubar i { width: 14px; height: 3px; border-radius: 2px; background: var(--line); }
+.desk { position: absolute; inset: 7% 0 0 0; }
+.win { position: absolute; border-radius: 6px; background: color-mix(in srgb, Canvas 82%, white); box-shadow: 0 6px 18px rgba(0,0,0,.22); transition: left .35s cubic-bezier(.2,.8,.2,1), top .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1), height .35s cubic-bezier(.2,.8,.2,1); overflow: hidden; }
+.win .bar { height: 14px; display: flex; gap: 3px; align-items: center; padding: 0 6px; background: var(--soft); }
+.win .bar i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
+.win .bar i:first-child { background: #ff5f57; } .win .bar i:nth-child(2) { background: #febc2e; } .win .bar i:nth-child(3) { background: #28c840; }
+.win.ghost { background: transparent; box-shadow: none; border: 1.5px dashed color-mix(in srgb, CanvasText 30%, transparent); transition: none; }
+.win.flash { animation: flash .6s ease; }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); } 100% { box-shadow: 0 0 0 10px transparent, 0 6px 18px rgba(0,0,0,.22); } }
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.caption b { font-size: 15px; margin-right: 8px; }
+.steps { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+.steps li { margin: 2px 0; }
+@media (max-width: 620px) { .hero { grid-template-columns: 1fr; } }
+
+/* ---- shortcuts */
+.keys { display: inline-flex; gap: 3px; }
+kbd { font: 12px ui-monospace, SFMono-Regular, monospace; min-width: 22px; padding: 1px 6px; text-align: center; border-radius: 5px; border: 1px solid var(--line); border-bottom-width: 2px; background: Canvas; }
+.group h3:first-child { margin-top: 10px; }
+.binding { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 5px 6px; border-radius: 8px; }
+.binding:hover { background: var(--soft); }
+.binding .name { display: flex; align-items: center; gap: 10px; }
+.glyph { width: 30px; height: 20px; flex: none; }
+.glyph .frame { fill: none; stroke: color-mix(in srgb, CanvasText 30%, transparent); stroke-width: 1.2; }
+.glyph .fill { fill: var(--accent); } .glyph .fill.dim { opacity: .45; }
+.glyph .stroke { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tools { display: flex; align-items: center; gap: 4px; }
+.chip { min-width: 96px; height: 28px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.chip:hover { border-color: var(--accent); }
+.chip.empty { color: var(--muted); }
+.chip.recording { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); animation: pulse 1.2s ease-in-out infinite; }
+.chip.bad { border-color: var(--danger); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 10%, transparent); } }
+.icon { width: 26px; height: 26px; padding: 0; flex: none; border-radius: 6px; border: 0; background: transparent; color: var(--muted); }
+.icon:hover { background: var(--soft); color: inherit; }
+.note { grid-column: 1 / -1; margin: 0 0 2px 40px; font-size: 12px; color: var(--muted); }
+.note.error { color: var(--danger); }
+p.note.error:not(.binding .note) { margin: 6px 0; }
+.toggle { cursor: pointer; }
+.toggle small { display: block; }
+.toggle input { width: 34px; height: 20px; accent-color: var(--accent); }
+
+/* The overlay window is transparent; only the ring, the preview and the label draw. */
+html:has(body.overlay), body.overlay { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; cursor: default; user-select: none; }
+.preview { position: fixed; border-radius: 12px; border: 2px solid color-mix(in srgb, var(--accent) 90%, white); background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: 0 10px 40px rgba(0,0,0,.25); transition: left .12s ease, top .12s ease, width .12s ease, height .12s ease; }
+.ring { position: fixed; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
+.ring .track { fill: color-mix(in srgb, Canvas 78%, transparent); stroke: color-mix(in srgb, CanvasText 18%, transparent); stroke-width: 1; }
+.ring .segment { fill: transparent; }
+.ring .segment.on { fill: var(--accent); }
+.ring .hub { fill: color-mix(in srgb, Canvas 92%, transparent); stroke: color-mix(in srgb, CanvasText 18%, transparent); }
+.ring .hub.on { fill: var(--accent); }
+.label { position: fixed; transform: translateX(-50%); padding: 3px 10px; border-radius: 99px; font: 12px system-ui, -apple-system, sans-serif; color: #fff; background: rgba(20,20,24,.82); white-space: nowrap; }
+/* Two balanced columns of groups when there is room. */
+@media (min-width: 760px) { #groups { column-count: 2; column-gap: 28px; } .group { break-inside: avoid; } }
+.icon-space { width: 26px; flex: none; }

@@ -1,0 +1,14 @@
+{
+  "id": "app.medeo.example.recorder",
+  "name": "Recorder Example",
+  "version": "1.0.0",
+  "api_version": 1,
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "screen_capture",
+    "microphone",
+    "system_audio"
+  ],
+  "commands": []
+}

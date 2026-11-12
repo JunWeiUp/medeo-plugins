@@ -1,0 +1,13 @@
+{
+  "id": "app.medeo.example.launcher",
+  "name": "Launcher Example",
+  "version": "1.0.0",
+  "api_version": 1,
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "applications",
+    "global_shortcuts"
+  ],
+  "commands": []
+}

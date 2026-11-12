@@ -1,0 +1,122 @@
+{
+  "id": "app.medeo.mac-cleaner",
+  "name": "Mac Cleaner",
+  "description": "Finds caches, logs and leftovers on your Mac, shows what fills your disk, and moves what you choose to the Trash.",
+  "icon": "icon.svg",
+  "version": "1.7.1",
+  "api_version": 1,
+  "runtime": "node",
+  "platforms": [
+    "macos"
+  ],
+  "worker": "main.mjs",
+  "ui": "ui/index.html",
+  "permissions": [
+    "node",
+    "storage"
+  ],
+  "commands": [
+    {
+      "id": "cleaner.quick",
+      "title": "One-click Clean"
+    },
+    {
+      "id": "cleaner.scope",
+      "title": "Clean"
+    }
+  ],
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "project_roots": {
+          "type": "string",
+          "default": "",
+          "title": "Project folders",
+          "description": "One per line; scanned for node_modules, build, Pods and other rebuildable folders"
+        },
+        "clean_method": {
+          "type": "string",
+          "default": "trash",
+          "title": "Clean method",
+          "enum": [
+            "trash",
+            "delete"
+          ]
+        },
+        "codex_session_days": {
+          "type": "number",
+          "default": 90,
+          "title": "List Codex sessions older than (days)"
+        },
+        "include_commands": {
+          "type": "boolean",
+          "default": true,
+          "title": "Offer the tools' own clean commands",
+          "description": "go clean, npm cache clean, brew cleanup…"
+        }
+      }
+    },
+    "launcher": {
+      "keyword": "clean",
+      "commands": [
+        {
+          "command": "cleaner.quick",
+          "subtitle": "Safe items only: caches, logs and the Trash",
+          "pinnable": true,
+          "keywords": [
+            "junk",
+            "cache",
+            "disk",
+            "free space"
+          ]
+        },
+        {
+          "command": "cleaner.scope",
+          "pinnable": true,
+          "keywords": [
+            "junk",
+            "cache"
+          ],
+          "expand": "scope",
+          "arguments": [
+            {
+              "name": "scope",
+              "type": "enum",
+              "title": "What to clean",
+              "options": [
+                {
+                  "value": "general",
+                  "title": "Clean system junk",
+                  "subtitle": "Browser caches, logs, Downloads installers, the Trash",
+                  "keywords": [
+                    "system",
+                    "browser"
+                  ]
+                },
+                {
+                  "value": "developer",
+                  "title": "Clean developer caches",
+                  "subtitle": "Xcode, Homebrew, npm, Gradle and other tools",
+                  "keywords": [
+                    "developer",
+                    "xcode",
+                    "npm",
+                    "homebrew"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json",
+      "zh-TW": "locales/zh-TW.json"
+    }
+  }
+}

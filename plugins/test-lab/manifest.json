@@ -1,0 +1,85 @@
+{
+  "id": "app.medeo.test-lab",
+  "name": "Test Lab",
+  "description": "Exercises every platform capability, one tab per permission, plus a self-test.",
+  "icon": "icon.svg",
+  "version": "1.2.10",
+  "api_version": 1,
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "storage",
+    "creation_open",
+    {
+      "file_access": []
+    },
+    {
+      "file_full_access": []
+    },
+    {
+      "network": [
+        "http://127.0.0.1:8765"
+      ]
+    },
+    "agent_api",
+    "clipboard_read",
+    "clipboard_write",
+    "screen_capture",
+    "camera",
+    "microphone",
+    "system_audio",
+    "applications",
+    "plugin_commands",
+    "global_shortcuts",
+    "notifications",
+    "tray",
+    "app_windows",
+    "accessibility",
+    "window_management",
+    "input_method",
+    {
+      "external_open": [
+        "https://example.com"
+      ]
+    },
+    {
+      "browser_view": [
+        "http://127.0.0.1:8765"
+      ]
+    },
+    "system_info",
+    "secrets",
+    "background_tasks",
+    "power",
+    {
+      "process_spawn": [
+        "/usr/bin/printf",
+        "C:/Windows/System32/cmd.exe"
+      ]
+    },
+    {
+      "approvals": [
+        "run_command"
+      ]
+    },
+    "local_server",
+    "printing",
+    "contacts",
+    "calendar",
+    "location",
+    "device_access"
+  ],
+  "commands": [
+    {
+      "id": "lab.selftest",
+      "title": "Run self-test"
+    }
+  ],
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+body{margin:0;background:var(--color-surface-background);color:var(--color-surface-on-surface)}main{max-width:900px;margin:0 auto;padding:32px;display:grid;gap:20px}header{display:grid;gap:8px}h1{font-size:28px;margin:0}header small{letter-spacing:.12em;color:var(--color-schemes-primary)}header code{opacity:.65}.status{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--color-surface-outline-variant);border-radius:12px}.status code{margin-left:auto}.operation{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end}label{display:grid;gap:10px;font-family:monospace}textarea{box-sizing:border-box;min-height:100px;resize:vertical;font:13px/1.5 monospace;padding:14px;border:1px solid var(--color-surface-outline-variant);border-radius:10px;color:inherit;background:var(--color-surface-surface-container-lowest)}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;border-radius:12px;padding:20px;background:var(--color-surface-surface-container-lowest);font-size:13px;line-height:1.55}.error{color:var(--color-schemes-error)}@media(max-width:540px){main{padding:20px}.operation{grid-template-columns:1fr}.operation button{justify-self:end}}
+
+main.chat { height: 100dvh; display: flex; flex-direction: column; max-width: 960px; box-sizing: border-box; overflow: hidden; }
+.chat header { flex: none; }
+.chat header p { max-width: 70ch; }
+.conversation { flex: 1; min-height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }
+.conversation article { padding: 16px; border-radius: 12px; background: var(--color-surface-surface-container-lowest); white-space: pre-wrap; overflow-wrap: anywhere; }
+.composer { flex: none; display: flex; align-items: end; gap: 12px; border-top: 1px solid var(--color-surface-outline-variant); padding-top: 16px; }
+.composer label { flex: 1; min-width: 0; }
+.composer textarea { width: 100%; min-height: 80px; max-height: 160px; box-sizing: border-box; resize: vertical; }
+
+.chat header button { justify-self: start; }
+.chat label, .chat textarea { font-family: var(--font-family-plain); }
+.chat header p { font-size: var(--type-label-medium-size); line-height: 1.6; }
+.chat .conversation article:first-child { align-self: flex-end; background: var(--medeo-selected); max-width: 88%; }
+.chat .composer textarea { background: var(--color-surface-surface-container-lowest); }
+.chat textarea:focus-visible { outline: 2px solid var(--color-schemes-primary); outline-offset: 2px; }
+@media(max-height:600px) { main.chat { padding: 16px 24px; gap: 12px; } .chat header p { display: none; } }
+
+.origin-panel{border:1px solid var(--color-surface-outline-variant);border-radius:12px;padding:20px;margin:20px 0}.origin-panel label{display:block;margin:12px 0}.origin-panel input{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;border:1px solid var(--color-surface-outline-variant);border-radius:8px;background:var(--color-surface-surface-container-lowest);color:inherit}.origin-actions{display:flex;gap:8px;flex-wrap:wrap}.origin-panel ul{list-style:none;padding:0}.origin-panel li{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0}.origin-panel li code{overflow-wrap:anywhere}.origin-panel small{color:var(--color-surface-on-surface-variant)}
+
+.workspace-lab input,.workspace-lab select{box-sizing:border-box;padding:10px;border:1px solid var(--color-surface-outline-variant);border-radius:8px;color:inherit;background:var(--color-surface-surface-container-lowest);width:100%}.workspace-lab{gap:14px}.workspace-lab pre{margin:0}.workspace-lab .origin-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+main.workspace-lab{height:100dvh;box-sizing:border-box;max-width:1100px;padding:20px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto minmax(100px,24vh) auto;gap:10px;overflow:hidden}.workspace-lab h1{font-size:24px}.workspace-fields{min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:10px}.workspace-fields .wide{grid-column:1/-1}.workspace-fields label{gap:6px;font-size:12px}.workspace-lab .origin-actions button{font-size:12px;padding:8px 10px}.workspace-lab pre{max-height:none;min-height:0;padding:12px;font-size:12px}.workspace-lab [data-testid="drive.files.jobs"]{max-height:70px;overflow:auto}.workspace-lab [data-testid="drive.files.jobs"]:empty{display:none}@media(max-width:620px){.workspace-fields{grid-template-columns:1fr}.workspace-lab{padding:14px}}
+
+.workspace-lab header{display:block}.workspace-lab header h1{margin:4px 0}.workspace-note{font-size:12px;line-height:1.4;margin:4px 0;color:var(--color-surface-on-surface-variant)}
+
+.workspace-lab input[type="checkbox"]{width:auto;justify-self:start;accent-color:var(--color-schemes-primary)}
+
+main.secrets-lab{height:100dvh;box-sizing:border-box;max-width:820px;grid-template-rows:auto auto minmax(0,1fr) auto minmax(80px,18vh);gap:20px;overflow:hidden}.secrets-lab header p{font-size:14px;line-height:1.6;color:var(--color-surface-on-surface-variant);margin:0;max-width:65ch}.secret-fields{min-height:0;overflow:auto;display:grid;align-content:start;gap:20px}.secret-fields label{font-family:var(--font-family-plain);font-size:14px}.secret-fields input{box-sizing:border-box;width:100%;padding:14px;border:1px solid var(--color-surface-outline-variant);border-radius:10px;color:inherit;background:var(--color-surface-surface-container-lowest);font:inherit}.secret-fields input:focus-visible{outline:2px solid var(--color-schemes-primary);outline-offset:2px}.secrets-lab pre{margin:0;max-height:none;min-height:0}@media(max-height:620px){main.secrets-lab{padding:18px;gap:12px}.secrets-lab header p{font-size:12px}.secret-fields{gap:12px}}
+
+.server-lab .secret-fields{grid-template-columns:minmax(130px,.5fr) minmax(0,1.5fr);gap:14px}.server-lab .secret-fields label:nth-child(3),.server-lab .secret-fields code{grid-column:1/-1}.server-lab .secret-fields input{padding:12px}@media(max-width:540px){.server-lab .secret-fields{grid-template-columns:1fr}}
+
+/* A masked normal text field remains selectable/copyable with native keyboard actions. */
+.server-lab [data-testid="drive.server.token"]{-webkit-text-security:disc}
