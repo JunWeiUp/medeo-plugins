@@ -1,0 +1,140 @@
+# Official signed plugins are public npm packages (@medeo-plugin/plugin-<name>).
+# Needs repository secrets MEDEO_PLUGIN_SIGNING_KEY (the official publisher key, PEM) and
+# NPM_TOKEN (publish rights on the @medeo-plugin scope). Without them the run only verifies.
+name: release-plugins
+on:
+  push:
+    branches: [main]
+    paths: ['plugins/**', 'scripts/release-plugins*', '.github/workflows/release-plugins.yml', 'package-lock.json']
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 'Plugin directory name (empty = all)'
+        required: false
+      dry_run:
+        description: 'Prepare and verify without publishing'
+        type: boolean
+        default: true
+      migration_only:
+        description: 'Require original GitHub release packages; never rebuild'
+        type: boolean
+        default: false
+permissions:
+  # write: notes-only GitHub releases (tags <plugin>@<version>) after npm publishes.
+  contents: write
+# Serialize all refs: an old migration must never race a new version's latest tag.
+concurrency:
+  group: release-plugins-npm
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    outputs:
+      # name@version npm accepted but is still processing (it can take up to an hour).
+      pending: ${{ steps.publish.outputs.pending }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, registry-url: 'https://registry.npmjs.org' }
+      - run: npm ci
+      - run: npm run typecheck && npm test
+      - name: Release secrets
+        id: secrets
+        env:
+          HAS_KEY: ${{ secrets.MEDEO_PLUGIN_SIGNING_KEY != '' }}
+          HAS_NPM: ${{ secrets.NPM_TOKEN != '' }}
+        run: |
+          if [ "$HAS_KEY" = true ] && [ "$HAS_NPM" = true ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
+          else echo "::warning::MEDEO_PLUGIN_SIGNING_KEY or NPM_TOKEN is not set; nothing is published"; echo "ready=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Prepare, verify and publish signed plugins
+        id: publish
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          SIGNING_KEY: ${{ secrets.MEDEO_PLUGIN_SIGNING_KEY }}
+          ONLY: ${{ inputs.plugin }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          MIGRATION_ONLY: ${{ inputs.migration_only }}
+        run: |
+          key="$RUNNER_TEMP/plugin-release-key.pem"
+          trap 'rm -f "$key"' EXIT
+          if [ -n "$SIGNING_KEY" ]; then
+            (umask 077 && printf '%s\n' "$SIGNING_KEY" > "$key")
+            export MEDEO_PLUGIN_KEY_FILE="$key"
+          fi
+          flags=(--execute)
+          if [ "$DRY_RUN" = true ]; then flags=(--dry-run); fi
+          if [ "$MIGRATION_ONLY" = true ]; then flags+=(--migration-only); fi
+          node scripts/release-plugins.mjs publish "${ONLY:-all}" "${flags[@]}"
+      - name: Release notes on GitHub (no packages; installs and updates go through npm)
+        if: steps.secrets.outputs.ready == 'true' && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ONLY: ${{ inputs.plugin }}
+        run: node scripts/release-plugins.mjs notes-release "${ONLY:-all}"
+      - name: Preserve release verification output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-plugin-release
+          path: build/npm-plugins/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  # npm can keep a new version "being processed" (security scanning) for up to an hour;
+  # test-lab regularly takes 15–60 min. Wait on a cheap runner instead of failing.
+  await-npm:
+    needs: release
+    if: needs.release.outputs.pending != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - name: Wait until npm serves every pending version
+        env:
+          PENDING: ${{ needs.release.outputs.pending }}
+        run: |
+          for spec in $PENDING; do
+            name="@medeo-plugin/plugin-${spec%@*}"; version="${spec##*@}"
+            for _ in $(seq 1 100); do
+              if curl -fsS -H 'Accept: application/json' -H 'Cache-Control: no-cache' \
+                   "https://registry.npmjs.org/${name/\//%2F}/$version?t=$(date +%s)" >/dev/null 2>&1; then
+                echo "$name@$version is available"; continue 2
+              fi
+              sleep 60
+            done
+            echo "::error::$name@$version is still not served by npm after 100 minutes"; exit 1
+          done
+
+  # Same idempotent release, now that npm serves the versions: verifies the published
+  # bytes against the signed build, moves latest, writes the GitHub release notes.
+  finalize:
+    needs: [release, await-npm]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, registry-url: 'https://registry.npmjs.org' }
+      - run: npm ci
+      - name: Verify the published versions and move latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          SIGNING_KEY: ${{ secrets.MEDEO_PLUGIN_SIGNING_KEY }}
+          PENDING: ${{ needs.release.outputs.pending }}
+        run: |
+          key="$RUNNER_TEMP/plugin-release-key.pem"
+          trap 'rm -f "$key"' EXIT
+          (umask 077 && printf '%s\n' "$SIGNING_KEY" > "$key")
+          export MEDEO_PLUGIN_KEY_FILE="$key"
+          for spec in $PENDING; do
+            node scripts/release-plugins.mjs publish "${spec%@*}" --execute
+            node scripts/release-plugins.mjs notes-release "${spec%@*}"
+          done

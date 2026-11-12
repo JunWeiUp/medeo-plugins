@@ -9,9 +9,10 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test plugins/*/tests/*.test.mjs",
+    "test": "node --test plugins/*/tests/*.test.mjs scripts/*.test.mjs",
     "pack": "node scripts/pack-all.mjs",
-    "verify": "npm run typecheck && npm test && npm run pack"
+    "verify": "npm run typecheck && npm test && npm run pack",
+    "release:list": "node scripts/release-plugins.mjs list"
   },
   "devDependencies": {
     "@medeo-plugin/cli": "0.9.2",

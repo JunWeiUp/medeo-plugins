@@ -3,7 +3,7 @@
   "name": "Launcher",
   "description": "Press ⌥Space to open apps, run any plugin's commands and results, calculate and convert units from one search box.",
   "icon": "icon.svg",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "api_version": 1,
   "engines": {
     "medeo": ">=0.1.33"

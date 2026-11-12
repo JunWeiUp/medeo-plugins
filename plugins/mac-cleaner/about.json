@@ -2,6 +2,6 @@
   "author": "Medeo",
   "license": "MIT",
   "homepage": "https://medeo-desktop.play.one2x.ai/",
-  "repository": "https://github.com/one2x-ai/medeo-desktop-plugin-sdk/tree/main/plugins/mac-cleaner",
-  "bugs": "https://github.com/one2x-ai/medeo-desktop-plugin-sdk/issues"
+  "repository": "https://github.com/JunWeiUp/medeo-plugins/tree/main/plugins/mac-cleaner",
+  "bugs": "https://github.com/JunWeiUp/medeo-plugins/issues"
 }

@@ -3,3 +3,4 @@ dist/
 *.pem
 *.medeoplugin
 .DS_Store
+build/

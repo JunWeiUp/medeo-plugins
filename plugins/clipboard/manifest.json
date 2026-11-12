@@ -3,7 +3,7 @@
   "name": "Clipboard",
   "description": "Keeps everything you copy — text, rich text, images and files. Open it from the menu bar or with ⌥C, star and annotate items, and paste straight into the app you are in.",
   "icon": "icon.svg",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "api_version": 1,
   "runtime": "node",
   "platforms": [

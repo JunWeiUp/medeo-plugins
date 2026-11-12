@@ -1,8 +1,14 @@
+# Every push and PR: typecheck, tests, then pack + check every plugin with a throwaway key.
+# The packages are uploaded for trying out; they are not the signed official release.
 name: ci
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: macos-latest
@@ -15,4 +21,14 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Release dry run (throwaway key, any publisher)
+        run: |
+          key="$RUNNER_TEMP/ci-key.pem"
+          npx medeo-plugin keygen "$key"
+          node scripts/release-plugins.mjs build all "$key" build/ci-release --any-publisher
       - run: npm run pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: medeo-plugins-${{ github.sha }}
+          path: dist/*.medeoplugin
+          retention-days: 7

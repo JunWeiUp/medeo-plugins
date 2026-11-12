@@ -3,7 +3,7 @@
   "name": "Window Ring",
   "description": "Move and resize the window you are in with a radial menu or a shortcut: halves, quarters, thirds, maximize, center and the next display, with a live preview, cycles and undo.",
   "icon": "icon.svg",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "api_version": 1,
   "platforms": [
     "macos"

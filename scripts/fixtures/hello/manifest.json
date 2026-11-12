@@ -1,0 +1,1 @@
+{"id": "app.medeo.hello", "name": "Hello Medeo", "description": "A minimal plugin: a window, a command and storage.", "icon": "icon.svg", "version": "1.2.0", "api_version": 1, "worker": "worker.js", "ui": "ui/index.html", "permissions": ["storage"], "commands": [{"id": "counter.increment", "title": "+1"}]}
