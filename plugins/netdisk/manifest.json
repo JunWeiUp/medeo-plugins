@@ -1,0 +1,33 @@
+{
+  "id": "app.medeo.netdisk",
+  "name": "Netdisk",
+  "description": "Browse your Medeo Drive folders: store files by dragging them in, take them out by dragging them to Finder, rename, delete and see each file's sync state.",
+  "icon": "icon.svg",
+  "version": "1.1.6",
+  "api_version": 1,
+  "engines": {
+    "medeo": ">=0.1.44"
+  },
+  "platforms": [
+    "macos"
+  ],
+  "worker": "worker.js",
+  "ui": "ui/index.html",
+  "permissions": [
+    "storage",
+    "drive_read",
+    "drive_manage",
+    {
+      "file_access": []
+    }
+  ],
+  "commands": [],
+  "localization": {
+    "default_locale": "en",
+    "catalogs": {
+      "en": "locales/en.json",
+      "zh-CN": "locales/zh-CN.json",
+      "zh-TW": "locales/zh-TW.json"
+    }
+  }
+}

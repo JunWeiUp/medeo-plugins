@@ -13,6 +13,7 @@ Source for the Medeo desktop plugins. Each plugin lives in `plugins/<name>/` and
 | [Mac Cleaner](plugins/mac-cleaner) | `app.medeo.mac-cleaner` | node | Finds caches, logs and leftovers; moves only what you choose to the Trash |
 | [Screenshot](plugins/screenshot) | `app.medeo.screenshot` | node | Capture part of the screen and annotate it in place |
 | [Window Ring](plugins/window-ring) | `app.medeo.window-ring` | sandbox | Move and resize windows with a ring or keyboard shortcuts |
+| [Netdisk](plugins/netdisk) | `app.medeo.netdisk` | sandbox | File manager for Medeo Drive folders: store, take out, drag, rename, delete, sync state (macOS, Medeo 0.1.44+) |
 | [Test Lab](plugins/test-lab) | `app.medeo.test-lab` | sandbox | One tab per permission, for trying every plugin capability |
 
 ## Development

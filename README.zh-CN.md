@@ -13,6 +13,7 @@ Medeo 桌面端插件源码。每个插件位于 `plugins/<名称>/`，依赖公
 | [Mac 清理](plugins/mac-cleaner) | `app.medeo.mac-cleaner` | node | 找出缓存、日志与残留，只把你选中的移到废纸篓 |
 | [截图](plugins/screenshot) | `app.medeo.screenshot` | node | 截取屏幕任意区域并就地标注 |
 | [窗口环](plugins/window-ring) | `app.medeo.window-ring` | sandbox | 用环形菜单或快捷键移动、缩放窗口 |
+| [网盘](plugins/netdisk) | `app.medeo.netdisk` | sandbox | Medeo 网盘文件夹的文件管理：存入、取出、拖出、改名、删除、同步状态（macOS，需 Medeo 0.1.44+） |
 | [测试实验室](plugins/test-lab) | `app.medeo.test-lab` | sandbox | 每个权限一个页签，体验插件的全部能力 |
 
 ## 开发
