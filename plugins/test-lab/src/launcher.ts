@@ -1,6 +1,6 @@
 import css from './launcher.css';
 import { useStyle } from './style';
-import { applications, shortcuts, capabilities, permissions, type ApplicationEntry } from '@medeo-plugin/sdk';
+import { applications, shortcuts, capabilities, permissions, type ApplicationEntry } from '@one2x/medeo-plugin-sdk';
 import { Recent, search as rank } from './launcher-search.ts';
 export async function mountLauncher(withShortcut=false){
  useStyle(css);

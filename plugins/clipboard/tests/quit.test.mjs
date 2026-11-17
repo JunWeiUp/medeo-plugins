@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { withFakeHost } from '@medeo-plugin/sdk/testing';
+import { withFakeHost } from '@one2x/medeo-plugin-sdk/testing';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const waitFor = async predicate => {

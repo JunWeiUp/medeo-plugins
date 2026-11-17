@@ -4,8 +4,8 @@
 import { copyFile, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { appWindows, channel, definePlugin, events, i18n, plugins, shortcuts, tray, launcher } from '@medeo-plugin/sdk';
-import type { LauncherActionResult } from '@medeo-plugin/sdk';
+import { appWindows, channel, definePlugin, events, i18n, plugins, shortcuts, tray, launcher } from '@one2x/medeo-plugin-sdk';
+import type { LauncherActionResult } from '@one2x/medeo-plugin-sdk';
 import type { Filter } from './src/history.ts';
 import { Pasteboard } from './src/pasteboard.ts';
 import { DEFAULTS, limitsOf, normalize, validShortcut, type Settings } from './src/settings.ts';

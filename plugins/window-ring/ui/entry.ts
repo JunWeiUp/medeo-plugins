@@ -1,5 +1,5 @@
 // Both pages share this bundle: `index.html` is the main window, `ring.html` the overlay.
-import { channel, i18n, permissions, windowManagement, operations } from '@medeo-plugin/sdk';
+import { channel, i18n, permissions, windowManagement, operations } from '@one2x/medeo-plugin-sdk';
 import { RING, frameFor, ringAction, type Action } from '../src/layout.ts';
 import { fromKey, symbols, valid } from '../src/shortcuts.ts';
 import { BINDINGS, type FromWorker, type RingSession, type Status, type ToWorker } from '../src/protocol.ts';

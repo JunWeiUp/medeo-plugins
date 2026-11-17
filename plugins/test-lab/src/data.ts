@@ -6,7 +6,7 @@ import { useStyle } from './style';
 import { bytes, card, empty, explain, field, h, lang, page, pill, segmented, t, time, timeline } from './kit';
 import { icon } from './icons';
 import { mountNetworkOrigins } from './network-origins';
-import { accessibility, windowManagement, approvals, calendar, capabilities, contacts, creation, deviceLocation, devices, files, network, operations, printing, processes, resources, storage, system, type FileEntry } from '@medeo-plugin/sdk';
+import { accessibility, windowManagement, approvals, calendar, capabilities, contacts, creation, deviceLocation, devices, files, network, operations, printing, processes, resources, storage, system, type FileEntry } from '@one2x/medeo-plugin-sdk';
 
 const wait = async <T>(operation: Promise<unknown>) => operations.wait<T>(await operation as { id: string; status: string });
 const base = async (permission: string, options: Parameters<typeof page>[1] = {}) => { useStyle(css); return page(permission, options); };

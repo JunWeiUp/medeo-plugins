@@ -3,8 +3,8 @@
 [简体中文](README.zh-CN.md)
 
 Source for the Medeo desktop plugins. Each plugin lives in `plugins/<name>/` and builds with the public
-[`@medeo-plugin/sdk`](https://www.npmjs.com/package/@medeo-plugin/sdk) and
-[`@medeo-plugin/cli`](https://www.npmjs.com/package/@medeo-plugin/cli).
+[`@one2x/medeo-plugin-sdk`](https://www.npmjs.com/package/@one2x/medeo-plugin-sdk) and
+[`@one2x/medeo-plugin-cli`](https://www.npmjs.com/package/@one2x/medeo-plugin-cli).
 
 | Plugin | ID | Runtime | What it does |
 |---|---|---|---|

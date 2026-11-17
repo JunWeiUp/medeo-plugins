@@ -1,6 +1,6 @@
 import css from './panel.css';
 import { useStyle } from './style';
-import {capabilities,files,permissions,resources,type FileJob,operations} from '@medeo-plugin/sdk';
+import {capabilities,files,permissions,resources,type FileJob,operations} from '@one2x/medeo-plugin-sdk';
 const el=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 /** Developer permission lab: field and action names intentionally match the public SDK. */
 export async function mountWorkspace(){

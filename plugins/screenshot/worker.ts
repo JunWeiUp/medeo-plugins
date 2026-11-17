@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { appWindows, capture, channel, definePlugin, events, i18n, launcher, notifications, plugins, shortcuts, tray } from '@medeo-plugin/sdk';
+import { appWindows, capture, channel, definePlugin, events, i18n, launcher, notifications, plugins, shortcuts, tray } from '@one2x/medeo-plugin-sdk';
 import { expandHome, fileName } from './src/naming.ts';
 import { joinLines, split, type Action, type FromOverlay, type FromSettings, type Mode, type SettingsState, type Shot, type ToOverlay, type ToSettings } from './src/protocol.ts';
 import { DEFAULTS, normalize, type Settings, type ShortcutKey } from './src/settings.ts';

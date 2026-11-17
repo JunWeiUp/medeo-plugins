@@ -1,6 +1,6 @@
 // What the panel can show, built only from Medeo Launcher Protocol data (plugins.commands and
 // launcher.search). Nothing here knows any particular plugin. Pure, no IO.
-import type { InstalledPluginCommands, LauncherArgumentInfo, LauncherDataType, LauncherItem, LauncherTone } from '@medeo-plugin/sdk';
+import type { InstalledPluginCommands, LauncherArgumentInfo, LauncherDataType, LauncherItem, LauncherTone } from '@one2x/medeo-plugin-sdk';
 
 export type Kind = 'answer' | 'app' | 'command' | 'option' | 'open' | 'result' | 'center';
 export interface Entry {

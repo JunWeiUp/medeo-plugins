@@ -1,4 +1,4 @@
-import { capabilities, definePlugin, i18n, storage, system } from '@medeo-plugin/sdk';
+import { capabilities, definePlugin, i18n, storage, system } from '@one2x/medeo-plugin-sdk';
 import { startInputProvider } from './src/ime-worker';
 import { startLocalServerFixture } from './src/server-worker';
 

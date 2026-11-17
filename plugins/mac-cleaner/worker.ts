@@ -3,7 +3,7 @@
 import { statfs } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { channel, config, definePlugin, i18n, launcher, trash } from '@medeo-plugin/sdk';
+import { channel, config, definePlugin, i18n, launcher, trash } from '@one2x/medeo-plugin-sdk';
 import { size } from './src/view.ts';
 import { clean, type Method } from './src/clean.ts';
 import { copy, reveal, terminal } from './src/actions.ts';

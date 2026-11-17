@@ -1,6 +1,6 @@
 import css from './panel.css';
 import { useStyle } from './style';
-import { agent, capabilities, operations, permissions, type AgentJob } from '@medeo-plugin/sdk';
+import { agent, capabilities, operations, permissions, type AgentJob } from '@one2x/medeo-plugin-sdk';
 export async function mountChat(){
  useStyle(css);
  const main=document.querySelector('main')!,copy=await capabilities.labels(),t=(key:string)=>copy[key]??key;

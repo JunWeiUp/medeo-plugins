@@ -1,7 +1,7 @@
 // Netdisk: a file manager for the user's Medeo Drive folders (design: docs/ai-plugin-chat-design.html, 网盘插件 v22).
 // Everything runs in this window. Bytes and real paths never pass through here: Medeo copies files in and out,
 // hands them to the system for opening and dragging, and confirms folder access and deletions itself.
-import { drive, events, files, i18n, operations, resources, storage, type FileSource } from '@medeo-plugin/sdk';
+import { drive, events, files, i18n, operations, resources, storage, type FileSource } from '@one2x/medeo-plugin-sdk';
 import {
   arrange, badge, badgeText, busy, code, crumbs, drivePath, format, freeName, join, kindOf, linkFor, matches, range, size, total, unavailable, when,
   type Entry, type FileState, type Kind, type Sort, type SortKey,

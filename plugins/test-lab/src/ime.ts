@@ -1,6 +1,6 @@
 import css from './ime.css';
 import { useStyle } from './style';
-import {capabilities,inputMethod,storage,permissions} from '@medeo-plugin/sdk';
+import {capabilities,inputMethod,storage,permissions} from '@one2x/medeo-plugin-sdk';
 import {DEFAULT_WORDS,parseWords} from './ime-worker';
 export async function mountInputMethod(persist=false){
  useStyle(css);

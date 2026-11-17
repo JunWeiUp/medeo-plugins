@@ -1,7 +1,7 @@
 // Files other plugins hand to Netdisk ("Send to › Medeo Drive", Screenshot / Clipboard "Store to Medeo
 // Drive"; docs/ai-plugin-chat-design.html group 网盘接入). Runs in the worker: the sender gets an answer,
 // the user a notification, and a small window only when Netdisk has to ask where.
-import { appWindows, channel, drive, files, i18n, launcher, notifications, operations, storage, type LauncherInput } from '@medeo-plugin/sdk';
+import { appWindows, channel, drive, files, i18n, launcher, notifications, operations, storage, type LauncherInput } from '@one2x/medeo-plugin-sdk';
 import { code, freeName, join, linkFor, nameFor, webloc } from './logic.ts';
 
 export interface Root { id: string; name: string; label: string; folder: string; prefix: string }

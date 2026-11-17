@@ -1,5 +1,5 @@
 // Clipboard history as Medeo Launcher Protocol results (spec/launcher-v1.md). Pure, no IO.
-import type { LauncherItem } from '@medeo-plugin/sdk';
+import type { LauncherItem } from '@one2x/medeo-plugin-sdk';
 import { matchesQuery, type Entry } from './history.ts';
 
 export interface Labels { paste: string; copy: string; plain: string; star: string; unstar: string; remove: string; image: string; files: string; from: string; copied: string; note: string; kind: string; kinds: Record<string, string>; drive?: string }

@@ -1,4 +1,4 @@
-import {network} from '@medeo-plugin/sdk';
+import {network} from '@one2x/medeo-plugin-sdk';
 const el=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 /** Test permissions through the public SDK; origin consent is always the trusted native dialog. */
 export async function mountNetworkOrigins(main:HTMLElement,copy:Record<string,string>){

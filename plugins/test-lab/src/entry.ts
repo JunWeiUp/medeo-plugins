@@ -1,7 +1,7 @@
 import css from './panel.css';
 import { useStyle } from './style';
 import {mountNetworkOrigins} from './network-origins';
-import { capabilities, permissions } from '@medeo-plugin/sdk';
+import { capabilities, permissions } from '@one2x/medeo-plugin-sdk';
 export interface Case { permission:string; title:string; grant:unknown; actions:{method:string;args:Record<string,unknown>}[] }
 const el=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 export async function mount(spec:Case){

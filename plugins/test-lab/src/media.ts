@@ -5,7 +5,7 @@ import { useStyle } from './style';
 import { bytes, card, clock, css$, empty, explain, h, page, pill, segmented, t, time } from './kit';
 import { icon } from './icons';
 import { normalize, resample } from './pure';
-import { camera, microphone, operations, systemAudio, type MediaRecord } from '@medeo-plugin/sdk';
+import { camera, microphone, operations, systemAudio, type MediaRecord } from '@one2x/medeo-plugin-sdk';
 
 type Kind = 'camera' | 'microphone' | 'system_audio';
 const PROVIDERS = { camera, microphone, system_audio: systemAudio };

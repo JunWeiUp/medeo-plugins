@@ -1,6 +1,6 @@
 // The floating panel, after EcoPaste: search, categories, starred items and notes, and a
 // settings page. ↩ pastes into the app the user was in; the worker does the pasting.
-import { capabilities, channel, i18n, plugins } from '@medeo-plugin/sdk';
+import { capabilities, channel, i18n, plugins } from '@one2x/medeo-plugin-sdk';
 import { baseName, counts, FILTERS, filterOf, NOTE_CHARS, preview, search, type Entry, type Filter } from '../src/history.ts';
 import { acceleratorOf, DEFAULTS, MAX_ITEMS, RETENTION_DAYS, shortcutLabel, type Settings } from '../src/settings.ts';
 import type { Reply, Request, State } from '../src/protocol.ts';

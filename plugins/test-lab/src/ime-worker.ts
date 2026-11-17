@@ -1,4 +1,4 @@
-import {capabilities,events,inputMethod,storage} from '@medeo-plugin/sdk';
+import {capabilities,events,inputMethod,storage} from '@one2x/medeo-plugin-sdk';
 export const DEFAULT_WORDS="nihao=你好|您好\nmedeo=Medeo\nxiexie=谢谢\nzaijian=再见";
 export function parseWords(text:string){
  if(text.length>32768)throw Error('input_dictionary_too_large');

@@ -6,9 +6,9 @@ import { mkdir, readFile, readdir, writeFile, copyFile, cp, mkdtemp, rm } from '
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pack, README, INDEX_ENTRY, MEDIA } from '@medeo-plugin/cli/pack';
-import { unzip } from '@medeo-plugin/cli/zip';
-import { check } from '@medeo-plugin/cli/tooling';
+import { pack, README, INDEX_ENTRY, MEDIA } from '@one2x/medeo-plugin-cli/pack';
+import { unzip } from '@one2x/medeo-plugin-cli/zip';
+import { check } from '@one2x/medeo-plugin-cli/tooling';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // The Medeo plugin key: installed copies only upgrade, and keep their data, under

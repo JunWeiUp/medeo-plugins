@@ -5,7 +5,7 @@ import { useStyle } from './style';
 import { card, clock, empty, field, h, page, pill, segmented, t, time, timeline, toggle, windows } from './kit';
 import { icon } from './icons';
 import { accelerator } from './pure';
-import { appWindows, background, browserView, clipboard, events, external, i18n, notifications, power, shortcuts, tray } from '@medeo-plugin/sdk';
+import { appWindows, background, browserView, clipboard, events, external, i18n, notifications, power, shortcuts, tray } from '@one2x/medeo-plugin-sdk';
 
 const base = async (permission: string, wide = false) => { useStyle(css); return page(permission, { wide }); };
 

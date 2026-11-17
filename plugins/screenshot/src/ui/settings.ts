@@ -1,6 +1,6 @@
 // Settings and setup: the macOS screen-recording grant (with a button that asks for it),
 // shortcuts, where screenshots are saved. The worker owns the values; this page only edits.
-import { capture, channel, i18n } from '@medeo-plugin/sdk';
+import { capture, channel, i18n } from '@one2x/medeo-plugin-sdk';
 import type { FromSettings, SettingsState, ToSettings } from '../protocol.ts';
 import { SHORTCUTS, type Settings, type ShortcutKey } from '../settings.ts';
 import { fromKey, symbols, valid } from '../shortcuts.ts';

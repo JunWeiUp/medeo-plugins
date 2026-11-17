@@ -1,6 +1,6 @@
 // Launcher: ⌥Space (a default keybinding the user can change in the plugin center) toggles a
 // floating search panel. The panel page does the searching; the worker only shows and hides it.
-import { appWindows, channel, definePlugin, i18n } from '@medeo-plugin/sdk';
+import { appWindows, channel, definePlugin, i18n } from '@one2x/medeo-plugin-sdk';
 import { PANEL, type FromWorker, type ToWorker } from './src/protocol.ts';
 
 const SIZE = { width: 720, height: 476 };

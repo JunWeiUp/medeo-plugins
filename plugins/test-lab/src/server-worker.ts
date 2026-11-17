@@ -1,4 +1,4 @@
-import {server,capabilities,events} from '@medeo-plugin/sdk';
+import {server,capabilities,events} from '@one2x/medeo-plugin-sdk';
 /** The test app only echoes authenticated bytes or returns its own health data.
  * It never evaluates requests as code or translates paths into filesystem IO. */
 export function startLocalServerFixture(){

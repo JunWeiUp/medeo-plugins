@@ -3,8 +3,8 @@
 [English](README.md)
 
 Medeo 桌面端插件源码。每个插件位于 `plugins/<名称>/`，依赖公开的
-[`@medeo-plugin/sdk`](https://www.npmjs.com/package/@medeo-plugin/sdk) 与
-[`@medeo-plugin/cli`](https://www.npmjs.com/package/@medeo-plugin/cli) 构建。
+[`@one2x/medeo-plugin-sdk`](https://www.npmjs.com/package/@one2x/medeo-plugin-sdk) 与
+[`@one2x/medeo-plugin-cli`](https://www.npmjs.com/package/@one2x/medeo-plugin-cli) 构建。
 
 | 插件 | ID | 运行时 | 功能 |
 |---|---|---|---|

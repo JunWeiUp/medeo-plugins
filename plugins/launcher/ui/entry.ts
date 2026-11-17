@@ -2,7 +2,7 @@
 // Everything it shows comes from plugins.commands (what plugins declare) and launcher.search
 // (what providers answer); it knows no plugin by name.
 import { applications, channel, clipboard, events, i18n, launcher, plugins, storage,
-  type ApplicationEntry, type InstalledPluginCommands, type LauncherActionResult, type LauncherArgumentInfo, type LauncherEvent, type LauncherItem, type LauncherView } from '@medeo-plugin/sdk';
+  type ApplicationEntry, type InstalledPluginCommands, type LauncherActionResult, type LauncherArgumentInfo, type LauncherEvent, type LauncherItem, type LauncherView } from '@one2x/medeo-plugin-sdk';
 import { Usage, rank } from '../src/search.ts';
 import { answer, appEntries } from '../src/results.ts';
 import { argumentValue, catalogEntries, nextArgument, pinEntries, pinFor, resultEntries, scopeFor, sendTargets, type Entry, type Pin } from '../src/model.ts';

@@ -6,7 +6,7 @@ import { useStyle } from './style';
 import { icon } from './icons';
 import en from '../locales/en.json';
 import zh from '../locales/zh-CN.json';
-import { capabilities, i18n, permissions } from '@medeo-plugin/sdk';
+import { capabilities, i18n, permissions } from '@one2x/medeo-plugin-sdk';
 
 type Child = Node | string | number | null | undefined | false;
 type Props = Record<string, unknown> & { class?: string; testid?: string; text?: string };

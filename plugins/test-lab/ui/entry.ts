@@ -1,4 +1,4 @@
-import { capabilities, commands, i18n } from '@medeo-plugin/sdk';
+import { capabilities, commands, i18n } from '@one2x/medeo-plugin-sdk';
 import cases from '../cases.json';
 import { mount, type Case } from '../src/entry';
 import { icon } from '../src/icons';

@@ -1,8 +1,8 @@
 // Window Ring: Loop-style window layouts on Medeo's `window_management` capability.
 // Shortcuts apply a layout to the window you are in; ⌃⌥Space opens a radial menu in a
 // transparent overlay that previews the layout and applies it when ⌃⌥ is released.
-import { appWindows, channel, config, definePlugin, events, i18n, launcher, operations, shortcuts, storage, tray, windowManagement } from '@medeo-plugin/sdk';
-import type { ManagedScreen, ManagedWindow } from '@medeo-plugin/sdk';
+import { appWindows, channel, config, definePlugin, events, i18n, launcher, operations, shortcuts, storage, tray, windowManagement } from '@one2x/medeo-plugin-sdk';
+import type { ManagedScreen, ManagedWindow } from '@one2x/medeo-plugin-sdk';
 import { History, close, frameFor, isAction, nextInCycle, nextScreen, onNextDisplay, screenAt, screenOf, type Action, type Frame } from './src/layout.ts';
 import { BINDINGS, type BindingState, type FromWorker, type RingSession, type ShortcutError, type Status, type ToWorker } from './src/protocol.ts';
 import { clean, duplicateOf, effective, symbols, valid, type Overrides } from './src/shortcuts.ts';

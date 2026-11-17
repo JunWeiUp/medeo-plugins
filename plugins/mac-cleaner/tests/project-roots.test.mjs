@@ -48,7 +48,7 @@ test('real worker serializes rapid adds, rejects invalid paths, preserves commas
   try {
     const bundle = await build({ entryPoints: ['plugins/mac-cleaner/worker.ts'], bundle: true, platform: 'node', format: 'esm', write: false,
       plugins: [{ name: 'sdk-fixture', setup(build) {
-        build.onResolve({ filter: /^@medeo-plugin\/sdk$/ }, () => ({ path: 'sdk', namespace: 'fixture' }));
+        build.onResolve({ filter: /^@one2x\/medeo-plugin-sdk$/ }, () => ({ path: 'sdk', namespace: 'fixture' }));
         build.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export const { channel, config, definePlugin, trash, i18n, launcher } = globalThis.__cleanerRootsTest;', loader: 'js' }));
       } }] });
     const worker = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));

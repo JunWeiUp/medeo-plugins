@@ -1,6 +1,6 @@
 // Netdisk's window does the browsing; the worker receives what other plugins send
 // ("Send to › Medeo Drive", Screenshot / Clipboard "Store to Medeo Drive").
-import { definePlugin } from '@medeo-plugin/sdk';
+import { definePlugin } from '@one2x/medeo-plugin-sdk';
 import { listen, receive } from './src/receive.ts';
 export const { activate, deactivate } = definePlugin({
   activate(context) {

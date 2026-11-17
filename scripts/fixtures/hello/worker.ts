@@ -1,4 +1,4 @@
-import { definePlugin, storage } from '@medeo-plugin/sdk';
+import { definePlugin, storage } from '@one2x/medeo-plugin-sdk';
 export const { activate, deactivate } = definePlugin({
   activate(context) {
     context.commands.register('counter.increment', async () => {

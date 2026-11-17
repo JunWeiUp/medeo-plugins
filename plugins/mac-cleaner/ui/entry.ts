@@ -1,6 +1,6 @@
 // The window, laid out after Mackit: sidebar of categories with a startup-disk
 // footer, a toolbar, and a sortable inset table. The worker owns scans and cleans.
-import { channel, i18n, storage } from '@medeo-plugin/sdk';
+import { channel, i18n, storage } from '@one2x/medeo-plugin-sdk';
 import type { Item } from '../src/scan.ts';
 import { scopeOf, type Scope } from '../src/scope.ts';
 import { defaultSelection, GROUPS, rowItems, subRows, tick, type Row } from '../src/general.ts';

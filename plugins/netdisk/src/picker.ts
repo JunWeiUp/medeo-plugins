@@ -1,6 +1,6 @@
 // The small "Store to Medeo Drive" window (ui/store.html): which folder a file another plugin sent goes to.
 // The worker asks (src/receive.ts); this only shows the question and posts the answer back.
-import { channel, drive, i18n } from '@medeo-plugin/sdk';
+import { channel, drive, i18n } from '@one2x/medeo-plugin-sdk';
 import type { FromPicker, ToPicker } from './receive.ts';
 import { code, format, size } from './logic.ts';
 

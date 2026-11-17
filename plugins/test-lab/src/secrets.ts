@@ -1,6 +1,6 @@
 import css from './panel.css';
 import { useStyle } from './style';
-import {capabilities,permissions,secrets} from '@medeo-plugin/sdk';
+import {capabilities,permissions,secrets} from '@one2x/medeo-plugin-sdk';
 const el=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
 export async function mountSecrets(){
  useStyle(css);

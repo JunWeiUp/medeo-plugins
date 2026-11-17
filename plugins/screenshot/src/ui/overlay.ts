@@ -2,7 +2,7 @@
 // pointer shows the frozen screenshot. Pick a region (drag, Shift for a square, click a window,
 // Tab toggles window snapping, F takes the whole display), annotate with the bottom toolbar, then
 // copy / save / read text / beautify from the right-hand bar.
-import { appWindows, capabilities, channel, i18n, plugins } from '@medeo-plugin/sdk';
+import { appWindows, capabilities, channel, i18n, plugins } from '@one2x/medeo-plugin-sdk';
 import { CURSORS, HANDLES, clamp, contains, fromPoints, handlePoint, hitHandle, move, resize, round, windowAt, type Handle, type Point, type Rect } from '../geometry.ts';
 import { split, type Action, type FromOverlay, type OcrResult, type Shot, type ToOverlay } from '../protocol.ts';
 import {

@@ -1,7 +1,7 @@
 import css from './recorder.css';
 import { useStyle } from './style';
 import { describe } from './recorder-view.ts';
-import {capture,capabilities,permissions,type CaptureRecord} from '@medeo-plugin/sdk';
+import {capture,capabilities,permissions,type CaptureRecord} from '@one2x/medeo-plugin-sdk';
 export async function mountRecorder(audio=false){
  useStyle(css);
  const main=document.querySelector('main')!,copy=await capabilities.labels(),t=(key:string)=>copy[key]??key;
