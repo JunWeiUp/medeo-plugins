@@ -79,3 +79,14 @@ test('arranging, ranges, totals and free names', () => {
   assert.equal(freeName('新建文件夹', ['新建文件夹', '新建文件夹 2']), '新建文件夹 3');
   assert.equal(freeName('x', []), 'x');
 });
+
+test('a sent item is stored under a safe name', async () => {
+  const { nameFor, webloc } = await import('../src/logic.ts');
+  assert.equal(nameFor({ type: 'image', value: '/x/y.png', file: { name: '截图 1.png' } }), '截图 1.png');
+  assert.equal(nameFor({ type: 'text', value: '会议纪要：首页改版/三个方向\n第二行' }), '会议纪要：首页改版 三个方向 第二行.txt');
+  assert.equal(nameFor({ type: 'text', value: 'x'.repeat(100) }).length, 44);
+  assert.equal(nameFor({ type: 'url', value: 'https://medeo.app/home' }), 'medeo.app.webloc');
+  assert.equal(nameFor({ type: 'url', value: 'https://a.b/', title: 'Medeo 首页' }), 'Medeo 首页.webloc');
+  assert.equal(nameFor({ type: 'text', value: '   ' }), 'Text.txt');
+  assert.match(webloc('https://a.b/?x=1&y=<2>'), /<string>https:\/\/a\.b\/\?x=1&amp;y=&lt;2>/);
+});

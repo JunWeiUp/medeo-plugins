@@ -71,7 +71,8 @@ function render() {
   const toggle = check('screenshot.settings.openAfterSave', state.settings.openAfterSave, v => ({ openAfterSave: v }));
   save.append(el('h3', '', tr('section.save')),
     row(tr('save.folder'), null, path, button(tr('save.change'), 'screenshot.settings.folder.change', () => void post({ type: 'choose-folder' })), button(tr('save.reveal'), 'screenshot.settings.folder.reveal', () => void post({ type: 'reveal-folder' }))),
-    row(tr('save.open'), tr('save.open.note'), toggle));
+    row(tr('save.open'), tr('save.open.note'), toggle),
+    row(tr('save.drive'), tr('save.drive.note'), check('screenshot.settings.showDrive', state.settings.showDrive, v => ({ showDrive: v }))));
   root.append(save);
 
   const foot = el('div', 'foot');

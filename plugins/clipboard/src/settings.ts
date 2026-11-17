@@ -9,8 +9,10 @@ export interface Settings {
   maxItems: number;
   /** 0 = keep forever. */
   retentionDays: number;
+  /** The rows' «Store to Medeo Drive» button (hidden with «Don't show again»). */
+  showDrive: boolean;
 }
-export const DEFAULTS: Settings = { paused: false, shortcut: 'Alt+C', autoPaste: true, maxItems: 1000, retentionDays: 30 };
+export const DEFAULTS: Settings = { paused: false, shortcut: 'Alt+C', autoPaste: true, maxItems: 1000, retentionDays: 30, showDrive: true };
 export const MAX_ITEMS = [200, 500, 1000, 5000];
 export const RETENTION_DAYS = [1, 7, 30, 90, 365, 0];
 
@@ -23,6 +25,7 @@ export function normalize(raw: unknown): Settings {
     paused: v.paused === true,
     shortcut: typeof v.shortcut === 'string' && validShortcut(v.shortcut) ? v.shortcut : DEFAULTS.shortcut,
     autoPaste: typeof v.autoPaste === 'boolean' ? v.autoPaste : DEFAULTS.autoPaste,
+    showDrive: typeof v.showDrive === 'boolean' ? v.showDrive : DEFAULTS.showDrive,
     maxItems: MAX_ITEMS.includes(v.maxItems as number) ? v.maxItems as number : DEFAULTS.maxItems,
     retentionDays: RETENTION_DAYS.includes(v.retentionDays as number) ? v.retentionDays as number : DEFAULTS.retentionDays,
   };

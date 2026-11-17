@@ -4,10 +4,10 @@
 // or read with Apple Vision (OCR + QR).
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { appWindows, capture, channel, definePlugin, events, i18n, launcher, notifications, shortcuts, tray } from '@medeo-plugin/sdk';
+import { appWindows, capture, channel, definePlugin, events, i18n, launcher, notifications, plugins, shortcuts, tray } from '@medeo-plugin/sdk';
 import { expandHome, fileName } from './src/naming.ts';
 import { joinLines, split, type Action, type FromOverlay, type FromSettings, type Mode, type SettingsState, type Shot, type ToOverlay, type ToSettings } from './src/protocol.ts';
 import { DEFAULTS, normalize, type Settings, type ShortcutKey } from './src/settings.ts';
@@ -17,6 +17,7 @@ const OSASCRIPT = '/usr/bin/osascript', SCREENCAPTURE = '/usr/sbin/screencapture
 const PRIVACY = 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
 
 let root = '', dir = '', settingsFile = '';
+const NETDISK = 'app.medeo.netdisk';
 let settings: Settings = DEFAULTS;
 let errors: SettingsState['errors'] = {};
 let registered: Record<string, string> = {};
@@ -66,7 +67,7 @@ async function shoot(mode: Mode, delay = 0) {
   }
   const png = await readFile(file); await rm(file, { force: true });
   const t1 = Date.now();
-  const shot: Shot = { seq: ++seq, mode, width: d.width, height: d.height, scale: d.scale, windows: info.windows, output: { format: settings.format, downscale: settings.downscale, enter: settings.enterAction } };
+  const shot: Shot = { seq: ++seq, mode, width: d.width, height: d.height, scale: d.scale, windows: info.windows, output: { format: settings.format, downscale: settings.downscale, enter: settings.enterAction, drive: settings.showDrive } };
   const chunks = split(png.toString('base64'));
   current = { seq: shot.seq, at: Date.now() };
   results = null;
@@ -98,6 +99,7 @@ async function finished(r: { seq: number; action: Action; mime: string; parts: s
     finally { await rm(file, { force: true }); }
     return;
   }
+  if (r.action === 'drive' || r.action === 'drive-to') { void toDrive(png, r.action === 'drive-to'); return; }
   const target = saveDir();
   try {
     await mkdir(target, { recursive: true });
@@ -110,6 +112,23 @@ async function finished(r: { seq: number; action: Action; mime: string; parts: s
     console.error('save failed:', error);
     await notify('error.save', { folder: target });
   }
+}
+
+/** Netdisk stores it (and asks where, the first time or for drive-to); the temporary copy goes afterwards.
+ * Not on the serial queue: Netdisk may wait for the user, and the next capture must not. */
+async function toDrive(png: Buffer, choose: boolean) {
+  const folder = await mkdtemp(path.join(dir, 'drive-'));
+  const name = fileName(await label('drive.prefix'), new Date(), () => false, 'png');
+  const file = path.join(folder, name);
+  try {
+    await writeFile(file, png);
+    const answer = await plugins.run<{ ok?: boolean; cancelled?: boolean; error?: string }>(NETDISK, choose ? 'netdisk.store-to' : 'netdisk.store', { input: { type: 'image', value: file, title: name } });
+    // Netdisk says how it went in its own notification; only a refusal before it could is ours to tell.
+    if (!answer?.ok && !answer?.cancelled && !answer?.error) await notify('error.drive');
+  } catch (error) {
+    console.error('store to drive failed:', error);
+    await notify('error.drive');
+  } finally { await rm(folder, { recursive: true, force: true }); }
 }
 
 /** Reads the selection with Vision and sends the text and any QR payloads back to the overlay. */
@@ -221,6 +240,7 @@ function onMessage(m: FromOverlay | FromSettings) {
     case 'open-url': if (typeof m.url === 'string' && /^https?:\/\//i.test(m.url)) void run(OPEN, [m.url]).catch(() => {}); break;
     case 'settings-ready': void pushSettings(); break;
     case 'set': void serial(() => setSettings(m.patch)); break;
+    case 'hide-drive': void serial(() => setSettings({ showDrive: false })); break;
     case 'choose-folder': void serial(chooseFolder); break;
     case 'reveal-folder': void revealFolder().catch(() => {}); break;
     case 'open-privacy': void run(OPEN, [PRIVACY]).catch(() => {}); break;

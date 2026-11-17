@@ -2,7 +2,7 @@
 import type { LauncherItem } from '@medeo-plugin/sdk';
 import { matchesQuery, type Entry } from './history.ts';
 
-export interface Labels { paste: string; copy: string; plain: string; star: string; unstar: string; remove: string; image: string; files: string; from: string; copied: string; note: string; kind: string; kinds: Record<string, string> }
+export interface Labels { paste: string; copy: string; plain: string; star: string; unstar: string; remove: string; image: string; files: string; from: string; copied: string; note: string; kind: string; kinds: Record<string, string>; drive?: string }
 
 const firstLine = (text: string) => text.split(/\r?\n/).find(l => l.trim())?.trim() ?? text.trim();
 /** "5 min" style age, short enough for a subtitle. */
@@ -15,7 +15,7 @@ export function age(ms: number, now: number, locale: string): string {
   return rtf.format(-Math.round(s / 86400), 'day');
 }
 /** The newest entries that match, as launcher results. Global searches need at least two characters. */
-export function launcherItems(entries: Entry[], query: string, options: { scoped: boolean; limit: number; now: number; locale: string; blobs: string; labels: Labels }): LauncherItem[] {
+export function launcherItems(entries: Entry[], query: string, options: { scoped: boolean; limit: number; now: number; locale: string; blobs: string; labels: Labels; drive?: boolean }): LauncherItem[] {
   const q = query.trim();
   if (!options.scoped && q.length < 2) return [];
   const { labels: l } = options;
@@ -40,6 +40,7 @@ export function launcherItems(entries: Entry[], query: string, options: { scoped
         { id: 'copy', title: l.copy, shortcut: 'Cmd+C' },
         ...(e.kind === 'text' || e.kind === 'html' || e.kind === 'rtf' ? [{ id: 'plain', title: l.plain }] : []),
         { id: 'star', title: e.favorite ? l.unstar : l.star, shortcut: 'Cmd+S' },
+        ...(options.drive && l.drive ? [{ id: 'drive', title: l.drive }] : []),
         { id: 'delete', title: l.remove, style: 'destructive' as const },
       ],
     };

@@ -3,7 +3,7 @@
   "name": "Screenshot",
   "description": "Capture any part of the screen and annotate it in place: arrows, shapes, text, numbers, censor, spotlight, stamps and measuring. Copy, save, read text and QR codes, or beautify it on a gradient.",
   "icon": "icon.svg",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "api_version": 1,
   "runtime": "node",
   "platforms": [
@@ -17,7 +17,8 @@
     "screen_capture",
     "global_shortcuts",
     "tray",
-    "notifications"
+    "notifications",
+    "plugin_commands"
   ],
   "activation_events": [
     "onStartup"

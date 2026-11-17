@@ -55,7 +55,9 @@ const hide = () => channel.post({ type: 'hide' } satisfies ToWorker);
 async function loadCatalog() {
   try { catalog = await plugins.commands(); } catch (error) { catalog = []; console.warn('plugins.commands', code(error)); }
   commandRows = [...catalogEntries(catalog, t('open')), centerEntry()];
-  chips = catalog.filter(p => p.launcher?.keyword);
+  // Every plugin there is something to do with (a window, commands or results); the ones with a keyword first.
+  chips = catalog.filter(p => p.has_ui || p.commands.length || p.launcher?.provider)
+    .sort((a, b) => Number(!a.launcher?.keyword) - Number(!b.launcher?.keyword) || a.name.localeCompare(b.name));
 }
 async function loadApps(refresh = false) {
   try {
@@ -345,8 +347,8 @@ function draw() {
     list.append(el('div', 'group', t('group.plugins')));
     const box = el('div', 'chips');
     for (const p of chips) {
-      const chip = el('span', 'chip'); chip.dataset.testid = `launcher.chip.${p.launcher!.keyword}`;
-      chip.append(iconBox({ key: '', kind: 'open', title: p.name, subtitle: '', keywords: [], pluginName: p.name, image: p.icon }, true), document.createTextNode(p.name), kbd(p.launcher!.keyword!));
+      const chip = el('span', 'chip'); chip.dataset.testid = `launcher.chip.${p.launcher?.keyword ?? p.id}`; chip.title = p.description ?? p.name;
+      chip.append(iconBox({ key: '', kind: 'open', title: p.name, subtitle: '', keywords: [], pluginName: p.name, image: p.icon }, true), document.createTextNode(p.name), ...(p.launcher?.keyword ? [kbd(p.launcher.keyword)] : []));
       chip.onclick = () => enterScope(p);
       box.append(chip);
     }

@@ -96,5 +96,19 @@
   "tray.open": "打开剪贴板",
   "tray.pause": "暂停记录",
   "tray.quit": "退出剪贴板",
-  "tray.settings": "设置…"
+  "tray.settings": "设置…",
+  "row.drive": "存到网盘（按住 ⌥ 选文件夹）",
+  "launcher.drive": "存到网盘",
+  "drive.image": "剪贴板图片",
+  "drive.title": "存到网盘需要「网盘」插件",
+  "drive.body": "Medeo 官方插件，免费。装好后这一条会自动存进去。",
+  "drive.old": "已装的「网盘」版本太旧，还不能接收。更新后这一条会自动存进去。",
+  "drive.install": "安装",
+  "drive.update": "更新",
+  "drive.later": "稍后",
+  "drive.never": "不再显示",
+  "toast.driveGone": "原文件不在了。",
+  "toast.driveFailed": "没能交给「网盘」。",
+  "settings.drive": "「存到网盘」按钮",
+  "settings.drive.hint": "显示在每一条上；需要「网盘」插件。"
 }

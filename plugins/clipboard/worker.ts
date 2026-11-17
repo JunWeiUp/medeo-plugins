@@ -1,9 +1,10 @@
 // Clipboard: a Node plugin after EcoPaste. A helper watches the macOS pasteboard,
 // the worker keeps the history on disk, a global shortcut summons a small floating
 // panel at the pointer, and choosing an entry pastes it into the app the user was in.
-import { readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { appWindows, channel, definePlugin, events, i18n, shortcuts, tray, launcher } from '@medeo-plugin/sdk';
+import { appWindows, channel, definePlugin, events, i18n, plugins, shortcuts, tray, launcher } from '@medeo-plugin/sdk';
 import type { LauncherActionResult } from '@medeo-plugin/sdk';
 import type { Filter } from './src/history.ts';
 import { Pasteboard } from './src/pasteboard.ts';
@@ -17,7 +18,7 @@ const CHUNK_BUDGET = 800_000;
 const PANEL = 'panel', SHORTCUT = 'open';
 /** EcoPaste's window: 360 × 600. */
 const PANEL_SIZE = { width: 360, height: 600 };
-let store: Store, pasteboard: Pasteboard, settingsFile = '';
+let store: Store, pasteboard: Pasteboard, settingsFile = '', dir = '';
 let state: State = { ready: false, error: null, settings: DEFAULTS, trusted: null, shortcutError: null };
 let queue: Promise<unknown> = Promise.resolve(), posts = Promise.resolve();
 let registered = '';
@@ -177,9 +178,54 @@ async function labels(): Promise<Labels> {
   launcherLabels = { paste: t('launcher.paste', 'Paste'), copy: t('launcher.copy', 'Copy'), plain: t('launcher.plain', 'Paste as plain text'),
     star: t('launcher.star', 'Star'), unstar: t('launcher.unstar', 'Unstar'), remove: t('launcher.delete', 'Delete'), image: t('launcher.image', 'Image'),
     files: t('launcher.files', 'Files'), from: t('launcher.from', 'From'), copied: t('launcher.copied', 'Copied'), note: t('launcher.note', 'Note'), kind: t('launcher.kind', 'Type'),
-    kinds: { text: t('filter.text', 'Text'), html: t('filter.rich', 'Rich text'), rtf: t('filter.rich', 'Rich text'), image: t('filter.image', 'Image'), files: t('filter.files', 'Files') } };
+    drive: t('launcher.drive', 'Store to Medeo Drive'), kinds: { text: t('filter.text', 'Text'), html: t('filter.rich', 'Rich text'), rtf: t('filter.rich', 'Rich text'), image: t('filter.image', 'Image'), files: t('filter.files', 'Files') } };
   return launcherLabels;
 }
+// ---------------------------------------------------------------- «Store to Medeo Drive» (Netdisk)
+const NETDISK = 'app.medeo.netdisk';
+let netdisk: { ready: boolean; at: number } = { ready: false, at: 0 };
+/** Whether Netdisk is installed and takes files (checked at most every 30 s: searches are frequent). */
+async function netdiskReady(): Promise<boolean> {
+  if (Date.now() - netdisk.at < 30_000) return netdisk.ready;
+  const ready = await plugins.commands().then(list => !!list.find(p => p.id === NETDISK)?.commands.some(c => c.id === 'netdisk.store')).catch(() => false);
+  netdisk = { ready, at: Date.now() };
+  return ready;
+}
+/** Netdisk stores it (and asks where the first time, or with `choose`). Images get a readable name in a
+ * temporary folder (the history keeps them by hash); text over the 16 KB a hand-off carries becomes a .txt.
+ * Not on the serial queue: Netdisk may wait for the user. */
+async function toDrive(id: string, choose: boolean) {
+  const entry = store.entries.find(e => e.id === id);
+  if (!entry) return;
+  const command = choose ? 'netdisk.store-to' : 'netdisk.store';
+  const c = await i18n.catalog().catch(() => ({} as Record<string, string>));
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '.');
+  const temp = await mkdtemp(path.join(dir, 'drive-'));
+  const send = (input: { type: string; value: string; title?: string }) => plugins.run<{ ok?: boolean; cancelled?: boolean; error?: string }>(NETDISK, command, { input });
+  try {
+    if (entry.kind === 'image') {
+      const file = path.join(temp, `${c['drive.image'] ?? 'Clipboard image'} ${stamp}.png`);
+      await copyFile(path.join(store.blobs, `${entry.hash}.png`), file);
+      await send({ type: 'image', value: file });
+    } else if (entry.kind === 'files') {
+      const present = (entry.files ?? []).filter(f => existsSync(f));
+      if (!present.length) { toast('error', 'toast.driveGone'); return; }
+      for (const f of present.slice(0, 20)) if ((await stat(f)).isFile()) await send({ type: 'file', value: f });
+    } else {
+      const text = entry.text ?? '';
+      if (Buffer.byteLength(text) <= 16 * 1024) await send({ type: /^https?:\/\/\S+$/.test(text.trim()) ? 'url' : 'text', value: text, title: entry.note || undefined });
+      else {
+        const file = path.join(temp, `${(entry.note || text).replace(/[\\/:*?"<>|\s]+/g, ' ').trim().slice(0, 40) || 'Text'}.txt`);
+        await writeFile(file, text);
+        await send({ type: 'file', value: file });
+      }
+    }
+  } catch (error) {
+    console.error('store to drive failed:', error);
+    toast('error', 'toast.driveFailed');
+  } finally { await rm(temp, { recursive: true, force: true }); }
+}
+
 async function launcherAction(id: string, action: string): Promise<LauncherActionResult | void> {
   const entry = store.entries.find(e => e.id === id);
   if (!entry) return { refresh: true };
@@ -190,12 +236,13 @@ async function launcherAction(id: string, action: string): Promise<LauncherActio
     case 'copy': { const body = await store.body(entry); const ok = !!body && await pasteboard.write(body); return ok ? { close: true, toast: c.copy + ' ✓' } : { toast: 'copy failed' }; }
     case 'star': { const row = store.annotate(id, { favorite: !entry.favorite }); if (row) post({ type: 'updated', row }); return { refresh: true, toast: row?.favorite ? c.star + ' ✓' : c.unstar + ' ✓' }; }
     case 'delete': { post({ type: 'removed', ids: (await store.remove([id])).map(e => e.id) }); return { refresh: true }; }
+    case 'drive': { void toDrive(id, false); return { close: true }; }
   }
 }
 
 export const { activate, deactivate } = definePlugin({
   activate(context) {
-    const dir = context.storagePath!, root = context.extensionPath!;
+    dir = context.storagePath!; const root = context.extensionPath!;
     settingsFile = path.join(dir, 'settings.json');
     store = new Store(dir);
     exited = false;
@@ -223,7 +270,7 @@ export const { activate, deactivate } = definePlugin({
     })();
 
     context.subscriptions.push(launcher.provide({
-      search: async (query, { scoped, limit }) => launcherItems(store.entries, query, { scoped, limit, now: Date.now(), locale: (await i18n.state().catch(() => null))?.locale ?? 'en', blobs: store.blobs, labels: await labels() }),
+      search: async (query, { scoped, limit }) => launcherItems(store.entries, query, { scoped, limit, now: Date.now(), locale: (await i18n.state().catch(() => null))?.locale ?? 'en', blobs: store.blobs, labels: await labels(), drive: state.settings.showDrive && await netdiskReady() }),
       action: (item, action) => serial(() => launcherAction(item, action)),
     }));
     context.subscriptions.push({ dispose: i18n.onDidChangeLocale(() => { launcherLabels = null; }) });
@@ -255,6 +302,7 @@ export const { activate, deactivate } = definePlugin({
         case 'hello': void serial(async () => { sendAll(); await refreshTrust(); }); break;
         case 'paste': void serial(() => paste(String(message.id), message.plain === true)); break;
         case 'copy': void serial(() => copyOnly(String(message.id))); break;
+        case 'drive': void toDrive(String(message.id), message.choose === true); break;
         case 'delete': void serial(async () => post({ type: 'removed', ids: (await store.remove([String(message.id)])).map(e => e.id) })); break;
         case 'favorite': case 'note': void serial(async () => {
           const row = store.annotate(String(message.id), message.type === 'favorite' ? { favorite: message.favorite === true } : { note: String(message.note ?? '') });

@@ -23,7 +23,9 @@ export type Request =
   | { type: 'thumbs'; ids: string[] }
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'grant' }
-  | { type: 'hide' };
+  | { type: 'hide' }
+  /** To Netdisk: the folder it used last for Clipboard, or (`choose`) wherever the user picks. */
+  | { type: 'drive'; id: string; choose: boolean };
 export type Reply =
   | { type: 'rows'; reset: boolean; rows: Row[] }
   | { type: 'added'; row: Row }

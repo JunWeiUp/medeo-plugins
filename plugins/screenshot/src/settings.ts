@@ -18,10 +18,12 @@ export interface Settings {
   /** `~/…` or absolute. */
   saveDir: string;
   openAfterSave: boolean;
+  /** The toolbar's «Store to Medeo Drive» button (hidden with «Don't show again»). */
+  showDrive: boolean;
 }
 export const DEFAULTS: Settings = {
   shortcutArea: 'Command+Shift+X', shortcutFull: null, shortcutQuick: null, shortcutOcr: null,
-  enterAction: 'copy', format: 'png', downscale: false, saveDir: '~/Pictures/Medeo Screenshots', openAfterSave: false,
+  enterAction: 'copy', format: 'png', downscale: false, saveDir: '~/Pictures/Medeo Screenshots', openAfterSave: false, showDrive: true,
 };
 
 const shortcut = (v: unknown, d: string | null) => v === null ? null : typeof v === 'string' && valid(v) ? v : d;
@@ -44,5 +46,6 @@ export function normalize(value: unknown): Settings {
   if (typeof v.downscale === 'boolean') out.downscale = v.downscale;
   if (typeof v.saveDir === 'string' && v.saveDir.trim() && v.saveDir.length < 1024) out.saveDir = v.saveDir.trim();
   if (typeof v.openAfterSave === 'boolean') out.openAfterSave = v.openAfterSave;
+  if (typeof v.showDrive === 'boolean') out.showDrive = v.showDrive;
   return out;
 }

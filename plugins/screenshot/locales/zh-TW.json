@@ -137,5 +137,17 @@
   "tray.full": "全螢幕截圖",
   "tray.ocr": "截圖辨識文字（OCR）",
   "tray.quick": "快速截圖",
-  "tray.settings": "設定…"
+  "tray.settings": "設定…",
+  "action.drive": "存到網盤",
+  "drive.prefix": "截圖",
+  "drive.tip.title": "存到網盤需要「網盤」外掛",
+  "drive.tip.body": "Medeo 官方外掛，免費。裝好後這張截圖會自動存進去。",
+  "drive.tip.old": "已裝的「網盤」版本太舊，還不能接收截圖。更新後這張截圖會自動存進去。",
+  "drive.tip.install": "安裝",
+  "drive.tip.update": "更新",
+  "drive.tip.later": "稍後",
+  "drive.tip.never": "不再顯示",
+  "error.drive": "沒能把截圖交給「網盤」。",
+  "save.drive": "「存到網盤」按鈕",
+  "save.drive.note": "截圖後顯示在工具列；⇧⌘S 存入，按住 ⌥ 選資料夾。需要「網盤」外掛。"
 }

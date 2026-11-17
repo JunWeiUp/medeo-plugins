@@ -1,11 +1,14 @@
 // The floating panel, after EcoPaste: search, categories, starred items and notes, and a
 // settings page. ↩ pastes into the app the user was in; the worker does the pasting.
-import { channel, i18n } from '@medeo-plugin/sdk';
+import { capabilities, channel, i18n, plugins } from '@medeo-plugin/sdk';
 import { baseName, counts, FILTERS, filterOf, NOTE_CHARS, preview, search, type Entry, type Filter } from '../src/history.ts';
 import { acceleratorOf, DEFAULTS, MAX_ITEMS, RETENTION_DAYS, shortcutLabel, type Settings } from '../src/settings.ts';
 import type { Reply, Request, State } from '../src/protocol.ts';
 
 const PAGE = 150;
+/** The ⌥ key at the last click: ⌥-click on ☁ lets Netdisk ask where. */
+let driveAlt = false;
+addEventListener('pointerdown', e => { driveAlt = e.altKey; }, { capture: true });
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n;
@@ -87,6 +90,42 @@ function actionButton(name: string, title: string, test: string, run: () => void
   b.onclick = e => { e.stopPropagation(); run(); };
   return b;
 }
+// ---------------------------------------------------------------- «Store to Medeo Drive» (Netdisk)
+const NETDISK = 'app.medeo.netdisk';
+/** ready: Netdisk takes files · missing / old: offer to install or update · unsupported: this Medeo cannot ask (no button). */
+let drive: 'ready' | 'missing' | 'old' | 'unsupported' = 'unsupported';
+async function checkDrive() {
+  try {
+    const methods = (await capabilities.list()).find(c => c.permission === 'plugin_commands');
+    if (!methods?.granted || !methods.available_methods.includes('plugins.suggestInstall')) drive = 'unsupported';
+    else {
+      const p = (await plugins.commands()).find(x => x.id === NETDISK);
+      drive = !p ? 'missing' : p.commands.some(c => c.id === 'netdisk.store') ? 'ready' : 'old';
+    }
+  } catch { drive = 'unsupported'; }
+  return drive;
+}
+/** ☁ on a row (⌥-click: Netdisk asks where). Not installed or too old: the tip bar first. */
+async function toDrive(entry: Entry, choose: boolean) {
+  if (await checkDrive() === 'ready') { send({ type: 'drive', id: entry.id, choose }); return; }
+  showDriveTip(entry, choose);
+}
+function showDriveTip(entry: Entry, choose: boolean) {
+  const box = get('drive-tip');
+  const install = el('button', 'pill primary', t(drive === 'old' ? 'drive.update' : 'drive.install')); install.dataset.testid = 'clipboard.drive.install';
+  install.onclick = async () => {
+    box.hidden = true;
+    const answer = await plugins.suggestInstall(NETDISK).catch(() => ({ state: 'cancelled' as const }));
+    if (answer.state === 'installed' && await checkDrive() === 'ready') send({ type: 'drive', id: entry.id, choose });
+  };
+  const later = el('button', 'pill', t('drive.later')); later.dataset.testid = 'clipboard.drive.later'; later.onclick = () => { box.hidden = true; };
+  const never = el('button', 'link', t('drive.never')); never.dataset.testid = 'clipboard.drive.never';
+  never.onclick = () => { box.hidden = true; send({ type: 'settings', patch: { showDrive: false } }); };
+  const text = el('div', 'tip-text'); text.append(el('b', '', t('drive.title')), el('span', '', t(drive === 'old' ? 'drive.old' : 'drive.body')));
+  const acts = el('div', 'tip-acts'); acts.append(install, later, never);
+  box.replaceChildren(text, acts); box.hidden = false;
+}
+
 function row(entry: Entry, index: number) {
   const r = el('div', `row${entry.id === selected ? ' selected' : ''}`);
   r.dataset.testid = 'clipboard.row'; r.dataset.id = entry.id; r.dataset.kind = entry.kind;
@@ -102,6 +141,7 @@ function row(entry: Entry, index: number) {
     actionButton(entry.favorite ? 'star-fill' : 'star', t(entry.favorite ? 'row.unfavorite' : 'row.favorite'), 'clipboard.row.favorite', () => send({ type: 'favorite', id: entry.id, favorite: !entry.favorite }), entry.favorite ? 'on' : ''),
     actionButton('note', t('row.note'), 'clipboard.row.note-edit', () => { editing = entry.id; selected = entry.id; renderList(); }),
     actionButton('copy', t('row.copy'), 'clipboard.row.copy', () => send({ type: 'copy', id: entry.id })),
+    ...(state.settings.showDrive && drive !== 'unsupported' ? [actionButton('cloud', t('row.drive'), 'clipboard.row.drive', () => void toDrive(entry, driveAlt))] : []),
     actionButton('trash', t('row.delete'), 'clipboard.row.delete', () => remove(entry.id), 'delete'),
   );
   r.append(lead(entry), body, actions);
@@ -181,6 +221,7 @@ function renderSettings() {
     line(t('settings.autoPaste'), t('settings.autoPaste.hint'), toggle(s.autoPaste, v => save({ autoPaste: v })), 'clipboard.settings.auto-paste'),
     line(t('settings.access'), null, access),
     line(t('settings.recording'), null, toggle(!s.paused, v => save({ paused: !v })), 'clipboard.settings.recording'),
+    line(t('settings.drive'), t('settings.drive.hint'), toggle(s.showDrive, v => save({ showDrive: v })), 'clipboard.settings.drive'),
   );
   const history = el('div', 'group');
   history.append(
@@ -304,3 +345,6 @@ channel.onMessage<Reply>(message => {
 });
 i18n.onDidChangeLocale(() => void loadCopy());
 void loadCopy().then(() => { send({ type: 'hello' }); get('search').focus(); });
+// Netdisk may be installed or removed while the panel is closed: look again whenever it opens.
+void checkDrive().then(() => renderList());
+addEventListener('focus', () => { const before = drive; void checkDrive().then(now => { if (now !== before) renderList(); }); });

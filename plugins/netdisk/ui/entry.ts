@@ -19,6 +19,8 @@ const app = $('app'), menuBox = $('menu'), toastBox = $('toast');
 let T: Record<string, string> = {};
 const t = (key: string, params: Record<string, string | number> = {}) => format(T[key] ?? key, params);
 
+/** ui/store.html: the small «Store to Medeo Drive» window (picker.ts) shares this bundle but not this page. */
+const PICKER = location.pathname.endsWith('/store.html');
 const s = {
   view: 'loading' as View,
   folders: [] as Folder[],
@@ -456,7 +458,7 @@ function startDrag(e: DragEvent, entry: Entry) {
 /** True while the DOM is being replaced: removing a focused rename field fires `blur`, which must not render again. */
 let rendering = false;
 function render() {
-  if (rendering) return;
+  if (rendering || PICKER) return;
   rendering = true;
   try { draw(); } finally { rendering = false; }
   const input = app.querySelector<HTMLInputElement>('[data-testid="netdisk.rename"]');
@@ -708,4 +710,5 @@ function statePage() {
 addEventListener('focus', () => { if (s.view === 'signed_out' || s.view === 'unavailable') void start(); });
 const offLocale = i18n.onDidChangeLocale(() => void i18n.catalog().then(c => { T = c; render(); }));
 addEventListener('pagehide', () => { offLocale(); if (watch) void files.unwatch(watch); }, { once: true });
-void start();
+// ui/store.html is the small «Store to Medeo Drive» window; everything else is the file manager.
+if (PICKER) void import('../src/picker.ts').then(m => m.mountPicker()); else void start();

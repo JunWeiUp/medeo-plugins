@@ -135,3 +135,16 @@ export function badge(st: FileState | undefined): { cls: string; glyph: string; 
     default: return null;
   }
 }
+
+/** The file name a sent item is stored under. */
+export function nameFor(input: { type: string; value: string; title?: string; file?: { name: string } }): string {
+  if (input.file?.name) return input.file.name;
+  const clean = (s: string) => s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+  if (input.type === 'url') {
+    let host = '';
+    try { host = new URL(input.value).hostname; } catch { /* not a URL */ }
+    return `${clean(input.title ?? '') || clean(host) || 'Link'}.webloc`;
+  }
+  return `${clean(input.title ?? '') || clean(input.value) || 'Text'}.txt`;
+}
+export const webloc = (url: string) => `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>URL</key><string>${url.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</string></dict></plist>\n`;

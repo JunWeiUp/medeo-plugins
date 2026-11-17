@@ -96,5 +96,19 @@
   "tray.open": "Open Clipboard",
   "tray.pause": "Pause Recording",
   "tray.quit": "Quit Clipboard",
-  "tray.settings": "Settings…"
+  "tray.settings": "Settings…",
+  "row.drive": "Store to Medeo Drive (⌥: choose folder)",
+  "launcher.drive": "Store to Medeo Drive",
+  "drive.image": "Clipboard image",
+  "drive.title": "Storing to Medeo Drive needs the Netdisk plugin",
+  "drive.body": "An official Medeo plugin, free. Once installed, this item goes straight in.",
+  "drive.old": "The installed Netdisk is too old to take items. Update it and this one goes straight in.",
+  "drive.install": "Install",
+  "drive.update": "Update",
+  "drive.later": "Later",
+  "drive.never": "Don’t show again",
+  "toast.driveGone": "The original files are gone.",
+  "toast.driveFailed": "Couldn’t hand it to Netdisk.",
+  "settings.drive": "«Store to Medeo Drive» button",
+  "settings.drive.hint": "On each item; needs the Netdisk plugin."
 }

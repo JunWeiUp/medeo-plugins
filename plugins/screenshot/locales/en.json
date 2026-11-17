@@ -137,5 +137,17 @@
   "tray.full": "Capture Full Screen",
   "tray.ocr": "Capture Text (OCR)",
   "tray.quick": "Quick Capture",
-  "tray.settings": "Settings…"
+  "tray.settings": "Settings…",
+  "action.drive": "Store to Medeo Drive",
+  "drive.prefix": "Screenshot",
+  "drive.tip.title": "Storing to Medeo Drive needs the Netdisk plugin",
+  "drive.tip.body": "An official Medeo plugin, free. Once it is installed this screenshot goes straight in.",
+  "drive.tip.old": "The installed Netdisk is too old to take screenshots. Update it and this one goes straight in.",
+  "drive.tip.install": "Install",
+  "drive.tip.update": "Update",
+  "drive.tip.later": "Later",
+  "drive.tip.never": "Don’t show again",
+  "error.drive": "Couldn’t hand the screenshot to Netdisk.",
+  "save.drive": "«Store to Medeo Drive» button",
+  "save.drive.note": "In the toolbar after a capture; ⇧⌘S stores, ⌥ to choose the folder. Needs the Netdisk plugin."
 }

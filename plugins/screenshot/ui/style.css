@@ -103,3 +103,13 @@ body.settings-page { font: 13px/1.5 var(--font); background: var(--medeo-bg, Can
 .settings-page .seg { display: flex; gap: 1px; padding: 2px; border-radius: 7px; background: rgba(127,127,127,.16); }
 .settings-page .seg-item { padding: 3px 12px; border-radius: 5px; }
 .settings-page .seg-item.on { background: var(--accent); color: #fff; }
+
+/* «Store to Medeo Drive»: the button and the «install Netdisk» popover */
+.tb.drive[hidden] { display: none; }
+.popover .drive-head { display: flex; align-items: center; gap: 8px; }
+.popover .drive-head .icon { width: 18px; height: 18px; }
+.popover .drive-body { margin: 0; max-width: 260px; opacity: .75; font-size: 12px; line-height: 1.45; white-space: normal; }
+.popover .drive-acts { display: flex; align-items: center; gap: 6px; }
+.popover .drive-btn { height: 26px; padding: 0 10px; border-radius: 7px; background: var(--bar-hover); font-size: 12px; }
+.popover .drive-btn.primary { background: var(--accent); color: #fff; }
+.popover .drive-link { margin-left: auto; background: none; font-size: 11.5px; opacity: .6; }

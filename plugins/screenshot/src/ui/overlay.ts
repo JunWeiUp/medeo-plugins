@@ -2,7 +2,7 @@
 // pointer shows the frozen screenshot. Pick a region (drag, Shift for a square, click a window,
 // Tab toggles window snapping, F takes the whole display), annotate with the bottom toolbar, then
 // copy / save / read text / beautify from the right-hand bar.
-import { appWindows, channel, i18n } from '@medeo-plugin/sdk';
+import { appWindows, capabilities, channel, i18n, plugins } from '@medeo-plugin/sdk';
 import { CURSORS, HANDLES, clamp, contains, fromPoints, handlePoint, hitHandle, move, resize, round, windowAt, type Handle, type Point, type Rect } from '../geometry.ts';
 import { split, type Action, type FromOverlay, type OcrResult, type Shot, type ToOverlay } from '../protocol.ts';
 import {
@@ -59,7 +59,7 @@ let invert = false;
 let busy = false;
 let space = false;
 let lastWheel = 0;
-let popover: 'palette' | 'beauty' | null = null;
+let popover: 'palette' | 'beauty' | 'drive' | null = null;
 let ocr: { loading: boolean; result: OcrResult | null } | null = null;
 type Drag =
   | { kind: 'region-new'; origin: Point; moved: boolean }
@@ -471,14 +471,48 @@ function buildBars() {
     btn('undo', tr('action.undo'), 'screenshot.action.undo', undo),
     btn('redo', tr('action.redo'), 'screenshot.action.redo', redo));
   const actions = $('actions'); actions.replaceChildren();
+  addEventListener('pointerdown', e => { driveAlt = e.altKey; }, { capture: true });
   actions.append(
     btn('copy', tr('action.copy'), 'screenshot.action.copy', () => void finish('copy'), 'tb primary'),
     btn('save', tr('action.save'), 'screenshot.action.save', () => void finish('save')),
+    btn('cloud', `${tr('action.drive')} (⇧⌘S)`, 'screenshot.action.drive', () => void toDrive(driveAlt), 'tb drive'),
     btn('ocr', tr('action.ocr'), 'screenshot.action.ocr', () => void runOcr()),
     btn('beautify', tr('action.beautify'), 'screenshot.action.beautify', () => togglePopover('beauty')),
     btn('invert', tr('action.invert'), 'screenshot.action.invert', () => { invert = !invert; paintBase(); refreshBars(); dirty(); }),
     sep(),
     btn('close', tr('action.cancel'), 'screenshot.action.cancel', cancel));
+}
+
+/** Whether Netdisk can take a capture: ready, not installed / too old (offer it), or this Medeo cannot ask (no button). */
+type DriveState = 'ready' | 'missing' | 'old' | 'unsupported';
+let driveState: DriveState = 'unsupported';
+const NETDISK = 'app.medeo.netdisk';
+async function checkDrive(): Promise<DriveState> {
+  try {
+    const methods = (await capabilities.list()).find(c => c.permission === 'plugin_commands');
+    if (!methods?.granted || !methods.available_methods.includes('plugins.suggestInstall')) return driveState = 'unsupported';
+    const p = (await plugins.commands()).find(x => x.id === NETDISK);
+    driveState = !p ? 'missing' : p.commands.some(c => c.id === 'netdisk.store') ? 'ready' : 'old';
+  } catch { driveState = 'unsupported'; }
+  refreshBars();
+  return driveState;
+}
+/** ☁: to Netdisk (⌥-click or ⌘⇧S with ⌥: Netdisk asks where). Not there yet: say so first (popover «drive»). */
+async function toDrive(choose: boolean) {
+  if (!shot || !sel || busy) return;
+  if (await checkDrive() === 'ready') { closePopover(); void finish(choose ? 'drive-to' : 'drive'); return; }
+  driveChoose = choose;
+  openPopover('drive');
+}
+let driveChoose = false, driveAlt = false;
+/** «Install»: the overlay covers the screen, so it steps aside while Medeo's confirmation is up. */
+async function installDrive() {
+  closePopover();
+  await appWindows.hide('overlay').catch(() => {});
+  let state = 'cancelled';
+  try { state = (await plugins.suggestInstall(NETDISK)).state; } catch (error) { console.error('suggestInstall failed:', error); }
+  await appWindows.open({ id: 'overlay', entry: 'ui/index.html', title: document.title, width: view.w, height: view.h, overlay: true }).catch(() => {});
+  if (state === 'installed' && await checkDrive() === 'ready') void finish(driveChoose ? 'drive-to' : 'drive');
 }
 
 function refreshBars() {
@@ -488,6 +522,8 @@ function refreshBars() {
   if (q('screenshot.action.redo')) q('screenshot.action.redo')!.disabled = !redoStack.length;
   q('screenshot.action.beautify')?.classList.toggle('lit', prefs.beauty.on);
   q('screenshot.action.invert')?.classList.toggle('on', invert);
+  const cloud = q('screenshot.action.drive');
+  if (cloud) cloud.hidden = !shot?.output.drive || driveState === 'unsupported';
   const current = selected !== null ? anns[selected] : null;
   const dot = document.querySelector<HTMLElement>('#tools .swatch-dot');
   if (dot) dot.style.background = (current?.o ?? prefs.opts[tool()]).color;
@@ -617,10 +653,22 @@ function placeBars() {
 function closePopover() { popover = null; $('popover').hidden = true; }
 function togglePopover(kind: 'palette' | 'beauty') { if (popover === kind) closePopover(); else openPopover(kind); }
 
-function openPopover(kind: 'palette' | 'beauty') {
+function openPopover(kind: 'palette' | 'beauty' | 'drive') {
   popover = kind;
   const box = $('popover'); box.replaceChildren();
-  if (kind === 'palette') {
+  if (kind === 'drive') {
+    const head = el('div', 'drive-head');
+    head.append(icon('cloud'), el('b', '', tr('drive.tip.title')));
+    const acts = el('div', 'drive-acts');
+    const install = el('button', 'drive-btn primary', tr(driveState === 'old' ? 'drive.tip.update' : 'drive.tip.install')); install.dataset.testid = 'screenshot.drive.install';
+    install.addEventListener('click', e => { e.stopPropagation(); void installDrive(); });
+    const later = el('button', 'drive-btn', tr('drive.tip.later')); later.dataset.testid = 'screenshot.drive.later';
+    later.addEventListener('click', e => { e.stopPropagation(); closePopover(); });
+    const never = el('button', 'drive-link', tr('drive.tip.never')); never.dataset.testid = 'screenshot.drive.never';
+    never.addEventListener('click', e => { e.stopPropagation(); closePopover(); if (shot) shot.output.drive = false; refreshBars(); void post({ type: 'hide-drive' }); });
+    acts.append(install, later, never);
+    box.append(head, el('p', 'drive-body', tr(driveState === 'old' ? 'drive.tip.old' : 'drive.tip.body')), acts);
+  } else if (kind === 'palette') {
     const { o, apply } = optionTarget();
     const grid = el('div', 'palette');
     for (const c of [...COLORS, ...prefs.recent.filter(c => !COLORS.includes(c))]) {
@@ -656,10 +704,11 @@ function openPopover(kind: 'palette' | 'beauty') {
 
 function placePopover() {
   const box = $('popover');
-  const anchor = popover === 'palette' ? document.querySelector<HTMLElement>('[data-testid="screenshot.color"]') : document.querySelector<HTMLElement>('[data-testid="screenshot.action.beautify"]');
+  const anchor = popover === 'palette' ? document.querySelector<HTMLElement>('[data-testid="screenshot.color"]')
+    : document.querySelector<HTMLElement>(popover === 'drive' ? '[data-testid="screenshot.action.drive"]' : '[data-testid="screenshot.action.beautify"]');
   if (!anchor || $('tools').hidden) { box.hidden = true; return; }
   const a = anchor.getBoundingClientRect(), r = box.getBoundingClientRect();
-  if (popover === 'beauty') {
+  if (popover === 'beauty' || popover === 'drive') {
     // Beside the vertical action bar.
     let x = a.right + 8; if (x + r.width > view.w - 4) x = a.left - 8 - r.width;
     box.style.left = `${x}px`; box.style.top = `${clamp(a.top, 4, view.h - r.height - 4)}px`;
@@ -817,6 +866,7 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Enter') { e.preventDefault(); void finish(shot?.output.enter ?? 'copy'); return; }
   if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && key === 'c') { e.preventDefault(); void finish('copy'); return; }
+  if (mod && e.shiftKey && key === 's') { e.preventDefault(); void toDrive(e.altKey); return; }
   if (mod && key === 's') { e.preventDefault(); void finish('save'); return; }
   if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); removeSelected(); return; }
   if (e.key.startsWith('Arrow') && sel) {
@@ -859,6 +909,7 @@ export async function startOverlay() {
     if (m?.type === 'shot') {
       reset(); prefs = loadPrefs();
       shot = m.shot; incoming = { seq: m.shot.seq, parts: [], total: m.parts };
+      if (shot.output.drive) void checkDrive();
       $('ui').style.cursor = 'crosshair';
     } else if (m?.type === 'chunk' && incoming && m.seq === incoming.seq) {
       incoming.parts[m.i] = m.data;

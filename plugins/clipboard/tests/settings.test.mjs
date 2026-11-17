@@ -7,7 +7,7 @@ test('bad or missing values fall back to the defaults', () => {
   assert.deepEqual(normalize(null), DEFAULTS);
   assert.deepEqual(normalize({ shortcut: 'C', maxItems: 7, retentionDays: 2, autoPaste: 'yes' }), DEFAULTS);
   assert.deepEqual(normalize({ shortcut: '', maxItems: 5000, retentionDays: 0, autoPaste: false, paused: true }),
-    { shortcut: '', maxItems: 5000, retentionDays: 0, autoPaste: false, paused: true });
+    { shortcut: '', maxItems: 5000, retentionDays: 0, autoPaste: false, paused: true, showDrive: true });
   assert.equal(limitsOf(normalize({ retentionDays: 0 })).maxAgeMs, Infinity);
 });
 

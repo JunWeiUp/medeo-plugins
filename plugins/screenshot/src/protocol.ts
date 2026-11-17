@@ -5,8 +5,9 @@ import type { Settings, ShortcutKey } from './settings.ts';
 
 /** area: select then edit · quick: save/copy as soon as the selection is made · ocr: read text · full: whole display. */
 export type Mode = 'area' | 'quick' | 'ocr' | 'full';
-export type Action = 'copy' | 'save' | 'ocr';
-export interface Output { format: 'png' | 'jpeg'; downscale: boolean; enter: 'copy' | 'save' }
+/** drive: to Netdisk, into the folder it used last for Screenshot · drive-to: Netdisk asks where. */
+export type Action = 'copy' | 'save' | 'ocr' | 'drive' | 'drive-to';
+export interface Output { format: 'png' | 'jpeg'; downscale: boolean; enter: 'copy' | 'save'; drive: boolean }
 
 /** One captured display: `width`/`height` in points, the PNG is `width*scale` pixels wide. */
 export interface Shot { seq: number; mode: Mode; width: number; height: number; scale: number; windows: Rect[]; output: Output }
@@ -23,7 +24,8 @@ export type FromOverlay =
   | { type: 'result'; seq: number; action: Action; mime: string; i: number; parts: number; data: string }
   | { type: 'cancel'; seq: number }
   | { type: 'copy-text'; text: string }
-  | { type: 'open-url'; url: string };
+  | { type: 'open-url'; url: string }
+  | { type: 'hide-drive' };
 
 export interface SettingsState { settings: Settings; saveDir: string; errors: Partial<Record<ShortcutKey, string>> }
 

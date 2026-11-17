@@ -811,6 +811,70 @@
     ]
   },
   {
+    "permission": "drive_read",
+    "title": "Medeo · Drive (read)",
+    "grant": "drive_read",
+    "actions": [
+      {
+        "method": "drive.state",
+        "args": {}
+      },
+      {
+        "method": "drive.folders",
+        "args": {}
+      },
+      {
+        "method": "drive.transfers",
+        "args": {}
+      },
+      {
+        "method": "drive.recent",
+        "args": {
+          "limit": 10
+        }
+      },
+      {
+        "method": "drive.failed",
+        "args": {}
+      },
+      {
+        "method": "drive.fileStates",
+        "args": {
+          "folder": "<drive.folders → id>",
+          "paths": [
+            "example.txt"
+          ]
+        }
+      },
+      {
+        "method": "drive.requestFolder",
+        "args": {
+          "reason": "Test Lab"
+        }
+      }
+    ]
+  },
+  {
+    "permission": "drive_manage",
+    "title": "Medeo · Drive (manage)",
+    "grant": "drive_manage",
+    "actions": [
+      {
+        "method": "drive.retry",
+        "args": {
+          "folder": "<drive.folders → id>"
+        }
+      },
+      {
+        "method": "drive.download",
+        "args": {
+          "folder": "<drive.folders → id>",
+          "path": "example.txt"
+        }
+      }
+    ]
+  },
+  {
     "permission": "node",
     "title": "Medeo · Node",
     "grant": "node",

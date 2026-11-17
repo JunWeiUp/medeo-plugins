@@ -96,5 +96,19 @@
   "tray.open": "打開剪貼簿",
   "tray.pause": "暫停記錄",
   "tray.quit": "結束剪貼簿",
-  "tray.settings": "設定…"
+  "tray.settings": "設定…",
+  "row.drive": "存到網盤（按住 ⌥ 選資料夾）",
+  "launcher.drive": "存到網盤",
+  "drive.image": "剪貼簿圖片",
+  "drive.title": "存到網盤需要「網盤」外掛",
+  "drive.body": "Medeo 官方外掛，免費。裝好後這一條會自動存進去。",
+  "drive.old": "已裝的「網盤」版本太舊，還不能接收。更新後這一條會自動存進去。",
+  "drive.install": "安裝",
+  "drive.update": "更新",
+  "drive.later": "稍後",
+  "drive.never": "不再顯示",
+  "toast.driveGone": "原檔案不在了。",
+  "toast.driveFailed": "沒能交給「網盤」。",
+  "settings.drive": "「存到網盤」按鈕",
+  "settings.drive.hint": "顯示在每一條上；需要「網盤」外掛。"
 }

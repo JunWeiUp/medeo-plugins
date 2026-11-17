@@ -3,7 +3,7 @@
   "name": "Test Lab",
   "description": "Exercises every platform capability, one tab per permission, plus a self-test.",
   "icon": "icon.svg",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "api_version": 1,
   "worker": "worker.js",
   "ui": "ui/index.html",
@@ -67,7 +67,9 @@
     "contacts",
     "calendar",
     "location",
-    "device_access"
+    "device_access",
+    "drive_read",
+    "drive_manage"
   ],
   "commands": [
     {

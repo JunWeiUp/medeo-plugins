@@ -82,7 +82,7 @@ export function resultEntries(results: { plugin_id: string; items: LauncherItem[
 export function scopeFor(query: string, plugins: InstalledPluginCommands[]): InstalledPluginCommands | undefined {
   const q = query.trim().toLowerCase();
   if (!q) return undefined;
-  return plugins.find(p => p.launcher?.keyword === q) ?? plugins.find(p => p.launcher && p.name.toLowerCase() === q);
+  return plugins.find(p => p.launcher?.keyword === q) ?? plugins.find(p => p.name.toLowerCase() === q);
 }
 
 /** Commands of other plugins that take this type of data ("send to…"). */
