@@ -6,7 +6,7 @@
   "version": "1.2.0",
   "api_version": 1,
   "engines": {
-    "medeo": ">=0.1.45"
+    "medeo": ">=0.1.46"
   },
   "platforms": [
     "macos"
