@@ -33,6 +33,7 @@
   "col_modified": "修改时间",
   "col_status": "状态",
   "st_synced": "已同步",
+  "st_unknown": "≈ 未确认",
   "st_pending": "等待中",
   "st_uploading": "上传中 {p}%",
   "st_downloading": "下载中 {p}%",

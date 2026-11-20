@@ -80,7 +80,7 @@ button:disabled{cursor:default;opacity:.5}
 
 /* badges */
 .badge{position:absolute;right:0;bottom:2px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;box-shadow:0 0 0 2px var(--bg)}
-.badge.ok{background:var(--ok)}.badge.bad{background:var(--bad)}.badge.cloud{background:var(--cloud)}.badge.wait{background:var(--line-strong);color:var(--ink)}
+.badge.ok{background:var(--ok)}.badge.bad{background:var(--bad)}.badge.cloud{background:var(--cloud)}.badge.wait{background:var(--line-strong);color:var(--ink)}.badge.unknown{background:var(--line-strong);color:var(--muted,var(--ink));opacity:.8}
 .badge.up{background:conic-gradient(var(--accent) var(--p,0%),var(--line-strong) 0)}
 .badge.up::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--bg)}
 .row .badge{position:relative;right:auto;bottom:auto;box-shadow:none;width:16px;height:16px;font-size:9px}

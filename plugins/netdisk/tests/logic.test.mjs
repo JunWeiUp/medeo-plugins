@@ -64,7 +64,8 @@ test('kinds and badges', () => {
   assert.equal(badgeText(f('a.markdown')), 'MARK');
   assert.equal(badgeText(f('Makefile')), 'FILE');
   assert.deepEqual(badge({ state: 'uploading', progress: 0.62 }), { cls: 'up', glyph: '', progress: 62 });
-  assert.equal(badge({ state: 'unknown' }), null);
+  assert.deepEqual(badge({ state: 'unknown' }), { cls: 'unknown', glyph: '≈' }, 'not confirmed, never shown as synced');
+  assert.equal(badge(undefined), null, 'not looked up yet: no badge');
   assert.equal(badge(undefined), null);
 });
 test('arranging, ranges, totals and free names', () => {
