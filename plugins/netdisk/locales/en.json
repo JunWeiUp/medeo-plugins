@@ -33,6 +33,7 @@
   "col_modified": "Modified",
   "col_status": "Status",
   "st_synced": "Synced",
+  "st_unknown": "≈ Not confirmed",
   "st_pending": "Waiting",
   "st_uploading": "Uploading {p}%",
   "st_downloading": "Downloading {p}%",

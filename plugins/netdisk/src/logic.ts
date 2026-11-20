@@ -132,6 +132,8 @@ export function badge(st: FileState | undefined): { cls: string; glyph: string; 
     case 'cloud': return { cls: 'cloud', glyph: '☁' };
     case 'pending': return { cls: 'wait', glyph: '…' };
     case 'uploading': case 'downloading': return { cls: 'up', glyph: '', progress: Math.round((st.progress ?? 0) * 100) };
+    // The engine could not tell: shown as not confirmed, never as synced.
+    case 'unknown': return { cls: 'unknown', glyph: '≈' };
     default: return null;
   }
 }

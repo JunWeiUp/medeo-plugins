@@ -114,7 +114,7 @@ function badgeEl(st: FileState | undefined) {
 function stateText(st: FileState | undefined): string {
   if (!st) return '';
   const p = Math.round((st.progress ?? 0) * 100);
-  return st.state === 'uploading' || st.state === 'downloading' ? t(`st_${st.state}`, { p }) : st.state === 'unknown' ? '' : t(`st_${st.state}`);
+  return st.state === 'uploading' || st.state === 'downloading' ? t(`st_${st.state}`, { p }) : t(`st_${st.state}`);
 }
 const reasonText = (reason: string) => T[`r_${reason}`] ?? t('r_other');
 const kindText = (entry: Entry) => (kindOf(entry) === 'img' ? `${badgeText(entry)} ` : '') + t(`k_${kindOf(entry)}`);
