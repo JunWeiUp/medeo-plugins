@@ -1,9 +1,9 @@
 {
   "id": "app.medeo.screenshot",
-  "name": "Screenshot",
-  "description": "Capture any part of the screen and annotate it in place: arrows, shapes, text, numbers, censor, spotlight, stamps and measuring. Copy, save, read text and QR codes, or beautify it on a gradient.",
+  "name": "Screenshot & Recorder",
+  "description": "Capture screenshots and 120Hz multi-track screen recordings with system audio, microphone, camera, click highlights, keystrokes, annotations, pin-to-screen, OCR and Issue packaging.",
   "icon": "icon.svg",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "api_version": 1,
   "runtime": "node",
   "platforms": [
@@ -15,6 +15,9 @@
     "app_windows",
     "window_management",
     "screen_capture",
+    "microphone",
+    "system_audio",
+    "camera",
     "global_shortcuts",
     "tray",
     "notifications",
@@ -27,6 +30,22 @@
     {
       "id": "screenshot.capture",
       "title": "Capture Area"
+    },
+    {
+      "id": "screenshot.record",
+      "title": "Record Screen (120Hz)"
+    },
+    {
+      "id": "screenshot.record-issue",
+      "title": "Record Issue (120Hz + Telemetry)"
+    },
+    {
+      "id": "screenshot.record-stop",
+      "title": "Stop Recording"
+    },
+    {
+      "id": "screenshot.history",
+      "title": "Recent Recordings"
     },
     {
       "id": "screenshot.capture-full",
@@ -42,11 +61,11 @@
     },
     {
       "id": "screenshot.settings",
-      "title": "Screenshot Settings"
+      "title": "Screenshot & Recorder Settings"
     },
     {
       "id": "screenshot.folder",
-      "title": "Open Screenshots Folder"
+      "title": "Open Captures Folder"
     }
   ],
   "localization": {
@@ -70,6 +89,49 @@
             "area",
             "截图",
             "截屏"
+          ]
+        },
+        {
+          "command": "screenshot.record",
+          "pinnable": true,
+          "keywords": [
+            "record",
+            "screen",
+            "video",
+            "120hz",
+            "gif",
+            "录屏",
+            "录制"
+          ]
+        },
+        {
+          "command": "screenshot.record-issue",
+          "pinnable": true,
+          "keywords": [
+            "issue",
+            "bug",
+            "record",
+            "mearc",
+            "问题录屏",
+            "复现"
+          ]
+        },
+        {
+          "command": "screenshot.record-stop",
+          "keywords": [
+            "stop",
+            "record",
+            "停止录屏"
+          ]
+        },
+        {
+          "command": "screenshot.history",
+          "keywords": [
+            "history",
+            "recordings",
+            "review",
+            "录屏历史",
+            "最近录制"
           ]
         },
         {
@@ -108,6 +170,7 @@
             "screenshot",
             "folder",
             "截图",
+            "录屏",
             "文件夹"
           ]
         },
@@ -115,8 +178,10 @@
           "command": "screenshot.settings",
           "keywords": [
             "screenshot",
+            "recorder",
             "settings",
             "截图",
+            "录屏",
             "设置"
           ]
         }

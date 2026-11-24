@@ -4,7 +4,12 @@
 // copy / save / read text / beautify from the right-hand bar.
 import { appWindows, capabilities, channel, i18n, plugins } from '@one2x/medeo-plugin-sdk';
 import { CURSORS, HANDLES, clamp, contains, fromPoints, handlePoint, hitHandle, move, resize, round, windowAt, type Handle, type Point, type Rect } from '../geometry.ts';
-import { split, type Action, type FromOverlay, type OcrResult, type Shot, type ToOverlay } from '../protocol.ts';
+import { split, type Action, type FromOverlay, type Mode, type OcrResult, type Shot, type ToOverlay } from '../protocol.ts';
+import type { CaptureDevicesResult } from '../platform.ts';
+import {
+  DEFAULT_RECORDING_CONFIG, ISSUE_RECORDING_PRESET, effectiveCodec, normalizeRecordingConfig,
+  type CameraCorner, type CameraShape, type ClickSize, type CountdownSeconds, type KeystrokePosition, type RecordingConfig, type RecordingFps,
+} from '../recording.ts';
 import {
   COLORS, DEFAULT_OPTIONS, EMOJIS, FONT, KEY_OF, NO_COLOR, NO_WIDTH, TOOLS, TOOL_KEYS, adjust, badgeRadius, bounds, constrain, draw, dragHandle,
   handles, hit, meaningful, optionsFor, spotlight, translate, type Ann, type Env, type HandleId, type Options, type Text, type Tool,
@@ -59,8 +64,11 @@ let invert = false;
 let busy = false;
 let space = false;
 let lastWheel = 0;
-let popover: 'palette' | 'beauty' | 'drive' | null = null;
+let popover: 'palette' | 'beauty' | 'drive' | 'rec-sys' | 'rec-mic' | 'rec-cam' | 'rec-clicks' | 'rec-keys' | null = null;
 let ocr: { loading: boolean; result: OcrResult | null } | null = null;
+let recConfig: RecordingConfig = { ...DEFAULT_RECORDING_CONFIG };
+let recDevices: CaptureDevicesResult | null = null;
+const isRecordMode = () => shot?.mode === 'record' || shot?.mode === 'record-issue';
 type Drag =
   | { kind: 'region-new'; origin: Point; moved: boolean }
   | { kind: 'region-move'; origin: Point; start: Rect }
@@ -91,6 +99,7 @@ async function load(seq: number, b64: string) {
   pixels = px.getContext('2d', { willReadFrequently: true })!; pixels.drawImage(bitmap, 0, 0);
   if (shot.mode === 'full') { sel = { ...view }; phase = 'edit'; showBars(); }
   else { phase = 'select'; hover = pointer ? snapTarget(pointer) : view; }
+  renderModeBar();
   showHint(); dirty(true);
   console.info(`shot #${seq} shown: ${bitmap.width}x${bitmap.height}, visible=${document.visibilityState}`);
 }
@@ -154,13 +163,13 @@ function render() {
   u.fill('evenodd');
   if (sel && prefs.beauty.on && phase === 'edit') beautyPreview(u, sel);
   if (hole) {
-    u.strokeStyle = '#007AFF'; u.lineWidth = sel ? 1.5 : 3;
+    u.strokeStyle = isRecordMode() ? '#FF3B30' : '#007AFF'; u.lineWidth = sel ? 2 : 3;
     if (!sel) u.setLineDash([6, 4]);
     u.strokeRect(hole.x + 0.5, hole.y + 0.5, hole.w - 1, hole.h - 1); u.setLineDash([]);
   }
   if (sel) {
     if (phase === 'edit') for (const h of HANDLES) {
-      const p = handlePoint(sel, h); u.fillStyle = '#fff'; u.strokeStyle = '#007AFF'; u.lineWidth = 1.5;
+      const p = handlePoint(sel, h); u.fillStyle = '#fff'; u.strokeStyle = isRecordMode() ? '#FF3B30' : '#007AFF'; u.lineWidth = 1.5;
       u.beginPath(); u.rect(p.x - 3.5, p.y - 3.5, 7, 7); u.fill(); u.stroke();
     }
     sizeLabel(u, sel);
@@ -278,6 +287,12 @@ function onDown(e: PointerEvent) {
   if (selected !== null) { selected = null; showOptions(); dirty(); }
   if (!contains(sel, p)) {
     if (!anns.length) { sel = null; phase = 'select'; hideBars(); drag = { kind: 'region-new', origin: p, moved: false }; dirty(true); }
+    return;
+  }
+  if (isRecordMode()) {
+    // In recording pre-flight mode, dragging inside selection moves the capture region.
+    if (contains(sel, p)) { drag = { kind: 'region-move', origin: p, start: { ...sel } }; return; }
+    sel = null; phase = 'select'; hideBars(); drag = { kind: 'region-new', origin: p, moved: false }; dirty(true);
     return;
   }
   const k = tool();
@@ -472,9 +487,15 @@ function buildBars() {
     btn('redo', tr('action.redo'), 'screenshot.action.redo', redo));
   const actions = $('actions'); actions.replaceChildren();
   addEventListener('pointerdown', e => { driveAlt = e.altKey; }, { capture: true });
+  const pinBtn = el('button', 'tb pin-tb', '📌');
+  pinBtn.title = tr('action.pin');
+  pinBtn.setAttribute('aria-label', tr('action.pin'));
+  pinBtn.dataset.testid = 'screenshot.action.pin';
+  pinBtn.addEventListener('click', e => { e.stopPropagation(); void finish('pin'); });
   actions.append(
     btn('copy', tr('action.copy'), 'screenshot.action.copy', () => void finish('copy'), 'tb primary'),
     btn('save', tr('action.save'), 'screenshot.action.save', () => void finish('save')),
+    pinBtn,
     btn('cloud', `${tr('action.drive')} (⇧⌘S)`, 'screenshot.action.drive', () => void toDrive(driveAlt), 'tb drive'),
     btn('ocr', tr('action.ocr'), 'screenshot.action.ocr', () => void runOcr()),
     btn('beautify', tr('action.beautify'), 'screenshot.action.beautify', () => togglePopover('beauty')),
@@ -621,12 +642,180 @@ function showOptions() {
   placeBars();
 }
 
-function showBars() { $('tools').hidden = false; $('actions').hidden = false; refreshBars(); placeBars(); }
-function hideBars() { $('tools').hidden = true; $('actions').hidden = true; $('options').hidden = true; closePopover(); }
+function setOverlayMode(next: Mode) {
+  if (!shot || shot.mode === next) return;
+  closePopover();
+  shot.mode = next;
+  if (next === 'record-issue') {
+    recConfig = normalizeRecordingConfig({ ...recConfig, ...ISSUE_RECORDING_PRESET });
+    void post({ type: 'update-recording-config', config: recConfig });
+  }
+  if (isRecordMode() && !recDevices) {
+    void post({ type: 'refresh-devices' });
+  }
+  renderModeBar();
+  if (phase === 'edit' && sel) {
+    showBars();
+  }
+  showHint();
+  dirty(true);
+}
+
+function renderModeBar() {
+  const bar = $('modebar');
+  if (!shot || phase === 'idle') { bar.hidden = true; return; }
+  bar.replaceChildren();
+  const items: { mode: Mode; label: string; testid: string }[] = [
+    { mode: 'area', label: tr('mode.screenshot'), testid: 'screenshot.mode.area' },
+    { mode: 'record', label: tr('mode.record'), testid: 'screenshot.mode.record' },
+    { mode: 'record-issue', label: tr('mode.recordIssue'), testid: 'screenshot.mode.recordIssue' },
+  ];
+  for (const it of items) {
+    const active = it.mode === 'area' ? !isRecordMode() : shot.mode === it.mode;
+    const b = el('button', `mode-pill${active ? ' on' : ''}${it.mode !== 'area' ? ' rec' : ''}`, it.label);
+    b.dataset.testid = it.testid;
+    b.addEventListener('click', e => { e.stopPropagation(); setOverlayMode(it.mode); });
+    bar.append(b);
+  }
+  if (shot.refreshRate && shot.refreshRate >= 100) {
+    bar.append(el('span', 'mode-hz', `${shot.refreshRate}Hz`));
+  }
+  bar.hidden = false;
+}
+
+function updateRecConfig(patch: Partial<RecordingConfig>) {
+  recConfig = normalizeRecordingConfig({ ...recConfig, ...patch });
+  void post({ type: 'update-recording-config', config: recConfig });
+  renderRecordBar();
+  if (popover && popover.startsWith('rec-')) openPopover(popover);
+}
+
+function startRecordingNow() {
+  if (!shot || !sel || busy) return;
+  busy = true;
+  const seqNo = shot.seq;
+  const rect = { ...sel };
+  const cfg = normalizeRecordingConfig(recConfig);
+  const issueMode = shot.mode === 'record-issue';
+  reset();
+  void appWindows.hide('overlay').catch(() => {});
+  void post({ type: 'start-recording', seq: seqNo, rect, config: cfg, issueMode });
+  busy = false;
+}
+
+function renderRecordBar() {
+  const bar = $('recbar');
+  if (!isRecordMode() || phase !== 'edit' || !sel) { bar.hidden = true; return; }
+  bar.replaceChildren();
+
+  // FPS segmented pill (30 / 60 / 120Hz)
+  const fpsSeg = el('div', 'seg');
+  fpsSeg.dataset.testid = 'recorder.bar.fps';
+  const maxHz = shot?.refreshRate ?? 60;
+  for (const fps of [30, 60, 120] as RecordingFps[]) {
+    const b = el('button', `seg-item${recConfig.fps === fps ? ' on' : ''}`, fps === 120 ? '120Hz' : `${fps}`);
+    b.dataset.value = String(fps);
+    if (fps === 120 && maxHz < 100) b.title = tr('rec.fps120Note');
+    b.addEventListener('click', e => { e.stopPropagation(); updateRecConfig({ fps }); });
+    fpsSeg.append(b);
+  }
+  const scale = shot?.scale ?? 1;
+  const codec = effectiveCodec(recConfig, sel.w * scale, sel.h * scale);
+  const codecTag = el('span', 'rec-chip-tag', codec.toUpperCase());
+  codecTag.title = tr('rec.codecNote', { codec: codec.toUpperCase() });
+
+  // Format toggle (MP4 / GIF)
+  const fmtSeg = el('div', 'seg');
+  fmtSeg.dataset.testid = 'recorder.bar.format';
+  for (const fmt of ['mp4', 'gif'] as const) {
+    const b = el('button', `seg-item${recConfig.format === fmt ? ' on' : ''}`, fmt.toUpperCase());
+    b.addEventListener('click', e => { e.stopPropagation(); updateRecConfig({ format: fmt }); });
+    fmtSeg.append(b);
+  }
+
+  // 5 core recording feature chips with inline config popovers
+  const chip = (
+    id: 'rec-sys' | 'rec-mic' | 'rec-cam' | 'rec-clicks' | 'rec-keys',
+    iconText: string,
+    labelText: string,
+    on: boolean,
+    testid: string,
+  ) => {
+    const b = el('button', `rec-chip${on ? ' on' : ''}${popover === id ? ' open' : ''}`);
+    b.dataset.testid = testid;
+    b.append(el('span', 'rec-chip-ic', iconText), el('span', '', labelText));
+    b.addEventListener('click', e => { e.stopPropagation(); togglePopover(id); });
+    return b;
+  };
+
+  const cdBtn = el('button', `rec-chip${recConfig.countdown > 0 ? ' on' : ''}`, recConfig.countdown ? `${recConfig.countdown}s` : tr('rec.countdown.off'));
+  cdBtn.dataset.testid = 'recorder.bar.countdown';
+  cdBtn.title = tr('rec.countdown.title');
+  cdBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const order: CountdownSeconds[] = [0, 3, 5];
+    const next = order[(order.indexOf(recConfig.countdown) + 1) % order.length];
+    updateRecConfig({ countdown: next });
+  });
+
+  const startBtn = el('button', 'rec-start-btn', `● ${tr('rec.start')}`);
+  startBtn.dataset.testid = 'recorder.bar.start';
+  startBtn.addEventListener('click', e => { e.stopPropagation(); startRecordingNow(); });
+
+  const cancelBtn = btn('close', tr('action.cancel'), 'recorder.bar.cancel', cancel, 'tb small');
+
+  bar.append(
+    fpsSeg,
+    codecTag,
+    fmtSeg,
+    sep(),
+    chip('rec-sys', '🔊', tr('rec.sys'), recConfig.systemAudio.enabled, 'recorder.bar.sys'),
+    chip('rec-mic', '🎙', tr('rec.mic'), recConfig.microphone.enabled, 'recorder.bar.mic'),
+    chip('rec-cam', '📷', tr('rec.cam'), recConfig.camera.enabled, 'recorder.bar.cam'),
+    chip('rec-clicks', '🖱', tr('rec.clicks'), recConfig.clicks.enabled, 'recorder.bar.clicks'),
+    chip('rec-keys', '⌨', tr('rec.keys'), recConfig.keystrokes.enabled, 'recorder.bar.keys'),
+    sep(),
+    cdBtn,
+    startBtn,
+    cancelBtn,
+  );
+  bar.hidden = false;
+  placeBars();
+}
+
+function showBars() {
+  if (isRecordMode()) {
+    $('tools').hidden = true;
+    $('actions').hidden = true;
+    $('options').hidden = true;
+    renderRecordBar();
+    return;
+  }
+  $('recbar').hidden = true;
+  $('tools').hidden = false;
+  $('actions').hidden = false;
+  refreshBars();
+  placeBars();
+}
+function hideBars() { $('tools').hidden = true; $('actions').hidden = true; $('options').hidden = true; $('recbar').hidden = true; closePopover(); }
 
 /** Bottom bar under the selection (or above, or inside); options row next to it; actions on the right. */
 function placeBars() {
-  if (!sel || $('tools').hidden) return;
+  if (!sel) return;
+  if (isRecordMode()) {
+    const recbar = $('recbar');
+    if (recbar.hidden) return;
+    const rr = recbar.getBoundingClientRect(), gap = 10;
+    let y: number;
+    if (sel.y + sel.h + gap + rr.height <= view.h - 6) y = sel.y + sel.h + gap;
+    else if (sel.y - gap - rr.height >= 48) y = sel.y - gap - rr.height;
+    else y = Math.max(48, sel.y + sel.h - rr.height - 10);
+    recbar.style.left = `${clamp(sel.x + sel.w / 2 - rr.width / 2, 6, view.w - rr.width - 6)}px`;
+    recbar.style.top = `${y}px`;
+    if (popover) placePopover();
+    return;
+  }
+  if ($('tools').hidden) return;
   const tools = $('tools'), options = $('options'), actions = $('actions');
   const extra = prefs.beauty.on ? prefs.beauty.padding : 0;
   const tr0 = tools.getBoundingClientRect(), orow = options.hidden ? { width: 0, height: 0 } : options.getBoundingClientRect();
@@ -649,14 +838,148 @@ function placeBars() {
   if (popover) placePopover();
 }
 
-// ---------------------------------------------------------------- popovers (palette, beautify)
-function closePopover() { popover = null; $('popover').hidden = true; }
-function togglePopover(kind: 'palette' | 'beauty') { if (popover === kind) closePopover(); else openPopover(kind); }
+// ---------------------------------------------------------------- popovers (palette, beautify, recording controls)
+function closePopover() { popover = null; $('popover').hidden = true; if (isRecordMode() && phase === 'edit') renderRecordBar(); }
+function togglePopover(kind: Exclude<typeof popover, null>) { if (popover === kind) closePopover(); else openPopover(kind); }
 
-function openPopover(kind: 'palette' | 'beauty' | 'drive') {
+function openPopover(kind: Exclude<typeof popover, null>) {
   popover = kind;
   const box = $('popover'); box.replaceChildren();
-  if (kind === 'drive') {
+  if (kind === 'rec-sys') {
+    const sys = recConfig.systemAudio;
+    const mkCheck = (lbl: string, checked: boolean, onChange: (v: boolean) => void) => {
+      const row = el('label', 'row-line');
+      const cb = el('input') as HTMLInputElement; cb.type = 'checkbox'; cb.checked = checked;
+      cb.addEventListener('change', () => onChange(cb.checked));
+      row.append(cb, el('span', '', lbl));
+      return row;
+    };
+    box.append(
+      el('div', 'pop-title', tr('rec.sys.title')),
+      mkCheck(tr('rec.sys.enable'), sys.enabled, v => updateRecConfig({ systemAudio: { ...sys, enabled: v } })),
+      mkCheck(tr('rec.sys.excludeSelf'), sys.excludeSelf, v => updateRecConfig({ systemAudio: { ...sys, excludeSelf: v } })),
+      mkCheck(tr('rec.separateAudio'), recConfig.separateAudio, v => updateRecConfig({ separateAudio: v })),
+    );
+  } else if (kind === 'rec-mic') {
+    const mic = recConfig.microphone;
+    const row = el('label', 'row-line');
+    const cb = el('input') as HTMLInputElement; cb.type = 'checkbox'; cb.checked = mic.enabled;
+    cb.addEventListener('change', () => updateRecConfig({ microphone: { ...mic, enabled: cb.checked } }));
+    row.append(cb, el('span', '', tr('rec.mic.enable')));
+
+    const select = el('select', 'rec-select') as HTMLSelectElement;
+    select.addEventListener('pointerdown', e => e.stopPropagation());
+    const defOpt = el('option', '', tr('rec.deviceDefault')) as HTMLOptionElement; defOpt.value = '';
+    select.append(defOpt);
+    for (const d of recDevices?.microphones ?? []) {
+      const opt = el('option', '', d.name) as HTMLOptionElement; opt.value = d.id;
+      if (mic.deviceId === d.id) opt.selected = true;
+      select.append(opt);
+    }
+    select.addEventListener('change', () => updateRecConfig({ microphone: { ...mic, enabled: true, deviceId: select.value || null } }));
+
+    const monoRow = el('label', 'row-line');
+    const monoCb = el('input') as HTMLInputElement; monoCb.type = 'checkbox'; monoCb.checked = mic.mono;
+    monoCb.addEventListener('change', () => updateRecConfig({ microphone: { ...mic, mono: monoCb.checked } }));
+    monoRow.append(monoCb, el('span', '', tr('rec.mic.mono')));
+
+    const micOs = recDevices?.os?.microphone;
+    box.append(el('div', 'pop-title', tr('rec.mic.title')), row, select, monoRow);
+    if (micOs === 'denied' || micOs === 'restricted') {
+      const warn = el('button', 'drive-link', tr('rec.permOpenMic'));
+      warn.addEventListener('click', e => { e.stopPropagation(); void post({ type: 'open-privacy-pane', pane: 'mic' }); });
+      box.append(warn);
+    }
+  } else if (kind === 'rec-cam') {
+    const cam = recConfig.camera;
+    const row = el('label', 'row-line');
+    const cb = el('input') as HTMLInputElement; cb.type = 'checkbox'; cb.checked = cam.enabled;
+    cb.addEventListener('change', () => updateRecConfig({ camera: { ...cam, enabled: cb.checked } }));
+    row.append(cb, el('span', '', tr('rec.cam.enable')));
+
+    const select = el('select', 'rec-select') as HTMLSelectElement;
+    select.addEventListener('pointerdown', e => e.stopPropagation());
+    const defOpt = el('option', '', tr('rec.deviceDefault')) as HTMLOptionElement; defOpt.value = '';
+    select.append(defOpt);
+    for (const d of recDevices?.cameras ?? []) {
+      const opt = el('option', '', d.name) as HTMLOptionElement; opt.value = d.id;
+      if (cam.deviceId === d.id) opt.selected = true;
+      select.append(opt);
+    }
+    select.addEventListener('change', () => updateRecConfig({ camera: { ...cam, enabled: true, deviceId: select.value || null } }));
+
+    const shapeSeg = segmented<CameraShape>('recorder.cam.shape', cam.shape, [
+      { v: 'circle', label: tr('rec.cam.circle') },
+      { v: 'rounded', label: tr('rec.cam.rounded') },
+      { v: 'rect', label: tr('rec.cam.rect') },
+    ], v => updateRecConfig({ camera: { ...cam, shape: v } }));
+
+    const posSeg = segmented<CameraCorner>('recorder.cam.pos', cam.position, [
+      { v: 'tl', label: '↖' }, { v: 'tr', label: '↗' }, { v: 'bl', label: '↙' }, { v: 'br', label: '↘' },
+    ], v => updateRecConfig({ camera: { ...cam, position: v } }));
+
+    const mirRow = el('label', 'row-line');
+    const mirCb = el('input') as HTMLInputElement; mirCb.type = 'checkbox'; mirCb.checked = cam.mirror;
+    mirCb.addEventListener('change', () => updateRecConfig({ camera: { ...cam, mirror: mirCb.checked } }));
+    mirRow.append(mirCb, el('span', '', tr('rec.cam.mirror')));
+
+    box.append(el('div', 'pop-title', tr('rec.cam.title')), row, select, shapeSeg, posSeg, mirRow);
+    const camOs = recDevices?.os?.camera;
+    if (camOs === 'denied' || camOs === 'restricted') {
+      const warn = el('button', 'drive-link', tr('rec.permOpenCam'));
+      warn.addEventListener('click', e => { e.stopPropagation(); void post({ type: 'open-privacy-pane', pane: 'camera' }); });
+      box.append(warn);
+    }
+  } else if (kind === 'rec-clicks') {
+    const clk = recConfig.clicks;
+    const row = el('label', 'row-line');
+    const cb = el('input') as HTMLInputElement; cb.type = 'checkbox'; cb.checked = clk.enabled;
+    cb.addEventListener('change', () => updateRecConfig({ clicks: { ...clk, enabled: cb.checked } }));
+    row.append(cb, el('span', '', tr('rec.clicks.enable')));
+
+    const colors = el('div', 'palette');
+    for (const c of ['#FF3B30', '#FF9500', '#34C759', '#007AFF', '#AF52DE', '#FFFFFF']) {
+      const s = el('button', `swatch${clk.color === c ? ' on' : ''}`); s.style.background = c;
+      s.addEventListener('click', e => { e.stopPropagation(); updateRecConfig({ clicks: { ...clk, enabled: true, color: c } }); });
+      colors.append(s);
+    }
+    const sizeSeg = segmented<ClickSize>('recorder.clicks.size', clk.size, [
+      { v: 'sm', label: 'S' }, { v: 'md', label: 'M' }, { v: 'lg', label: 'L' },
+    ], v => updateRecConfig({ clicks: { ...clk, size: v } }));
+
+    const sndRow = el('label', 'row-line');
+    const sndCb = el('input') as HTMLInputElement; sndCb.type = 'checkbox'; sndCb.checked = clk.sound;
+    sndCb.addEventListener('change', () => updateRecConfig({ clicks: { ...clk, sound: sndCb.checked } }));
+    sndRow.append(sndCb, el('span', '', tr('rec.clicks.sound')));
+
+    box.append(el('div', 'pop-title', tr('rec.clicks.title')), row, colors, sizeSeg, sndRow);
+  } else if (kind === 'rec-keys') {
+    const key = recConfig.keystrokes;
+    const row = el('label', 'row-line');
+    const cb = el('input') as HTMLInputElement; cb.type = 'checkbox'; cb.checked = key.enabled;
+    cb.addEventListener('change', () => updateRecConfig({ keystrokes: { ...key, enabled: cb.checked } }));
+    row.append(cb, el('span', '', tr('rec.keys.enable')));
+
+    const modeSeg = segmented<'shortcuts' | 'all'>('recorder.keys.mode', key.shortcutsOnly ? 'shortcuts' : 'all', [
+      { v: 'shortcuts', label: tr('rec.keys.shortcutsOnly') },
+      { v: 'all', label: tr('rec.keys.allKeys') },
+    ], v => updateRecConfig({ keystrokes: { ...key, enabled: true, shortcutsOnly: v === 'shortcuts' } }));
+
+    const posSeg = segmented<KeystrokePosition>('recorder.keys.pos', key.position, [
+      { v: 'bottom-left', label: '↙' },
+      { v: 'bottom-center', label: '↓' },
+      { v: 'bottom-right', label: '↘' },
+    ], v => updateRecConfig({ keystrokes: { ...key, position: v } }));
+
+    const note = el('p', 'drive-body', tr('rec.keys.privacyNote'));
+    box.append(el('div', 'pop-title', tr('rec.keys.title')), row, modeSeg, posSeg, note);
+    const inputOs = recDevices?.os?.input_monitoring;
+    if (inputOs && inputOs !== 'granted') {
+      const openBtn = el('button', 'drive-link', tr('rec.permOpenInput'));
+      openBtn.addEventListener('click', e => { e.stopPropagation(); void post({ type: 'open-privacy-pane', pane: 'input' }); });
+      box.append(openBtn);
+    }
+  } else if (kind === 'drive') {
     const head = el('div', 'drive-head');
     head.append(icon('cloud'), el('b', '', tr('drive.tip.title')));
     const acts = el('div', 'drive-acts');
@@ -704,9 +1027,20 @@ function openPopover(kind: 'palette' | 'beauty' | 'drive') {
 
 function placePopover() {
   const box = $('popover');
-  const anchor = popover === 'palette' ? document.querySelector<HTMLElement>('[data-testid="screenshot.color"]')
-    : document.querySelector<HTMLElement>(popover === 'drive' ? '[data-testid="screenshot.action.drive"]' : '[data-testid="screenshot.action.beautify"]');
-  if (!anchor || $('tools').hidden) { box.hidden = true; return; }
+  const recAnchorMap: Record<string, string> = {
+    'rec-sys': 'recorder.bar.sys',
+    'rec-mic': 'recorder.bar.mic',
+    'rec-cam': 'recorder.bar.cam',
+    'rec-clicks': 'recorder.bar.clicks',
+    'rec-keys': 'recorder.bar.keys',
+  };
+  const anchorTestId = popover && recAnchorMap[popover]
+    ? recAnchorMap[popover]
+    : popover === 'palette' ? 'screenshot.color'
+    : popover === 'drive' ? 'screenshot.action.drive' : 'screenshot.action.beautify';
+  const anchor = document.querySelector<HTMLElement>(`[data-testid="${anchorTestId}"]`);
+  const barVisible = isRecordMode() ? !$('recbar').hidden : !$('tools').hidden;
+  if (!anchor || !barVisible) { box.hidden = true; return; }
   const a = anchor.getBoundingClientRect(), r = box.getBoundingClientRect();
   if (popover === 'beauty' || popover === 'drive') {
     // Beside the vertical action bar.
@@ -795,11 +1129,12 @@ async function finish(action: Exclude<Action, 'ocr'>) {
   commitText();
   busy = true;
   const seq = shot.seq, mime = action === 'save' && shot.output.format === 'jpeg' ? 'image/jpeg' : 'image/png';
+  const rectCopy = { ...sel };
   try {
     const chunks = split(await toBase64(await encode(flatten(true), mime)));
-    // Back to the user's app at once; the worker copies or saves afterwards.
+    // Back to the user's app at once; the worker copies, pins, or saves afterwards.
     reset(); await appWindows.hide('overlay').catch(() => {});
-    for (let i = 0; i < chunks.length; i++) await post({ type: 'result', seq, action, mime, i, parts: chunks.length, data: chunks[i] });
+    for (let i = 0; i < chunks.length; i++) await post({ type: 'result', seq, action, mime, i, parts: chunks.length, data: chunks[i], rect: i === 0 ? rectCopy : undefined });
   } catch (error) {
     console.error('screenshot export failed:', error);
     await post({ type: 'cancel', seq }); reset(); await appWindows.hide('overlay').catch(() => {});
@@ -818,7 +1153,7 @@ function reset() {
   phase = 'idle'; sel = null; hover = null; drag = null; anns = []; undoStack = []; redoStack = [];
   selected = null; counter = 1; text = null; invert = false; ocr = null; space = false;
   const area = $<HTMLTextAreaElement>('text'); area.hidden = true; area.value = '';
-  hideBars(); $('hint').hidden = true; $('ocr').hidden = true; $('toast').hidden = true;
+  hideBars(); $('modebar').hidden = true; $('hint').hidden = true; $('ocr').hidden = true; $('toast').hidden = true;
   for (const c of canvases()) { const x = c.getContext('2d')!; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); }
   $('base').style.filter = 'none';
 }
@@ -863,7 +1198,12 @@ function onKey(e: KeyboardEvent) {
     else if (key === 'f' && !mod) { e.preventDefault(); sel = { ...view }; phase = 'edit'; if (shot?.mode === 'quick') { void finish(shot.output.enter); return; } if (shot?.mode === 'ocr') { showBars(); void runOcr(); return; } showBars(); showHint(); dirty(true); }
     return;
   }
-  if (e.key === 'Enter') { e.preventDefault(); void finish(shot?.output.enter ?? 'copy'); return; }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (isRecordMode()) startRecordingNow();
+    else void finish(shot?.output.enter ?? 'copy');
+    return;
+  }
   if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && key === 'c') { e.preventDefault(); void finish('copy'); return; }
   if (mod && e.shiftKey && key === 's') { e.preventDefault(); void toDrive(e.altKey); return; }
@@ -897,7 +1237,7 @@ export async function startOverlay() {
     if (i === null && tool() === 'select' && contains(sel, p)) void finish(shot?.output.enter ?? 'copy');
   });
   ui.addEventListener('wheel', onWheel, { passive: false });
-  for (const id of ['tools', 'options', 'actions', 'popover', 'ocr', 'text']) $(id).addEventListener('pointerdown', e => e.stopPropagation());
+  for (const id of ['modebar', 'tools', 'options', 'recbar', 'actions', 'popover', 'ocr', 'text']) $(id).addEventListener('pointerdown', e => e.stopPropagation());
   addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('keydown', onKey);
   addEventListener('keyup', e => { if (e.key === ' ') space = false; });
@@ -909,8 +1249,14 @@ export async function startOverlay() {
     if (m?.type === 'shot') {
       reset(); prefs = loadPrefs();
       shot = m.shot; incoming = { seq: m.shot.seq, parts: [], total: m.parts };
+      if (m.shot.recording) recConfig = normalizeRecordingConfig(m.shot.recording);
+      if (m.shot.mode === 'record-issue') recConfig = normalizeRecordingConfig({ ...recConfig, ...ISSUE_RECORDING_PRESET });
+      if (m.shot.devices) recDevices = m.shot.devices;
       if (shot.output.drive) void checkDrive();
       $('ui').style.cursor = 'crosshair';
+    } else if (m?.type === 'devices') {
+      recDevices = m.devices;
+      if (popover && popover.startsWith('rec-')) openPopover(popover);
     } else if (m?.type === 'chunk' && incoming && m.seq === incoming.seq) {
       incoming.parts[m.i] = m.data;
       if (incoming.parts.filter(p => p !== undefined).length === incoming.total) {

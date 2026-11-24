@@ -113,3 +113,130 @@ body.settings-page { font: 13px/1.5 var(--font); background: var(--medeo-bg, Can
 .popover .drive-btn { height: 26px; padding: 0 10px; border-radius: 7px; background: var(--bar-hover); font-size: 12px; }
 .popover .drive-btn.primary { background: var(--accent); color: #fff; }
 .popover .drive-link { margin-left: auto; background: none; font-size: 11.5px; opacity: .6; }
+
+
+/* ---------------------------------------------------------------- 120Hz Screen Recorder & Pin & Review */
+.modebar { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 4px 6px; z-index: 40; }
+.mode-pill { border: 0; background: transparent; color: rgba(255,255,255,.78); padding: 5px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.mode-pill:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mode-pill.on { background: #007AFF; color: #fff; }
+.mode-pill.rec.on { background: #FF3B30; color: #fff; }
+.mode-hz { font-size: 11px; font-weight: 600; color: #34C759; background: rgba(52,199,89,.16); padding: 2px 7px; border-radius: 99px; margin-left: 4px; }
+
+.recbar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; z-index: 35; }
+.rec-chip { display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 7px; padding: 5px 9px; font-size: 12px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.08); cursor: pointer; white-space: nowrap; }
+.rec-chip:hover { background: rgba(255,255,255,.15); color: #fff; }
+.rec-chip.on { background: rgba(0,122,255,.28); color: #fff; box-shadow: inset 0 0 0 1px rgba(0,122,255,.7); }
+.rec-chip.open { box-shadow: inset 0 0 0 1px rgba(255,255,255,.65); }
+.rec-chip-ic { font-size: 13px; line-height: 1; }
+.rec-chip-tag { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); }
+.rec-start-btn { border: 0; border-radius: 8px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; background: #FF3B30; color: #fff; cursor: pointer; white-space: nowrap; }
+.rec-start-btn:hover { background: #ff4f45; }
+.pin-tb { font-size: 14px; }
+.pop-title { font-size: 12px; font-weight: 600; opacity: .9; margin-bottom: 4px; }
+.rec-select { width: 100%; min-width: 190px; padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #fff; font-size: 12px; }
+
+/* Settings sub-permissions */
+.sub-perms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(128,128,128,.2); }
+.sub-perm-row { display: flex; align-items: center; gap: 6px; font-size: 12px; flex-wrap: wrap; }
+.foot-btns { display: flex; gap: 8px; }
+
+/* Recording HUD pill */
+body.hud-page { margin: 0; padding: 4px; background: transparent; overflow: hidden; user-select: none; -webkit-app-region: drag; }
+.rec-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; padding: 0 12px; border-radius: 20px; background: rgba(24,24,27,.92); border: 1px solid rgba(255,255,255,.14); color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+.rec-hud button { -webkit-app-region: no-drag; }
+.hud-status, .hud-meters, .hud-controls { display: flex; align-items: center; gap: 6px; }
+.hud-dot { width: 9px; height: 9px; border-radius: 50%; background: #FF3B30; box-shadow: 0 0 8px rgba(255,59,48,.85); }
+.hud-dot.paused { background: #FF9F0A; box-shadow: 0 0 8px rgba(255,159,10,.7); }
+.hud-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
+.hud-pill { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.88); }
+.hud-pill.fps.ok { background: rgba(52,199,89,.2); color: #6ee78f; }
+.hud-pill.fps.warn { background: rgba(255,159,10,.24); color: #ffd166; }
+.hud-pill.fps.drop { background: rgba(255,59,48,.28); color: #ff8078; }
+.hud-pill.issue { background: rgba(175,82,222,.3); color: #e2b8ff; }
+.hud-pill.ok { background: rgba(52,199,89,.22); color: #6ee78f; }
+.hud-pill.warn { background: rgba(255,159,10,.25); color: #ffd166; }
+.hud-icon-btn { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 6px; padding: 3px 7px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer; font-size: 12px; }
+.hud-icon-btn.muted { opacity: .55; background: rgba(255,59,48,.22); }
+.hud-vu { display: inline-block; width: 22px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
+.hud-vu-fill { display: block; height: 100%; background: #34C759; transition: width .12s linear; }
+.hud-btn { border: 0; border-radius: 6px; padding: 4px 8px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; font-size: 12px; }
+.hud-btn:hover { background: rgba(255,255,255,.22); }
+.hud-btn.ghost { background: transparent; opacity: .75; }
+.hud-stop { border: 0; border-radius: 8px; padding: 4px 10px; background: #FF3B30; color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; }
+.hud-stop:hover { background: #ff5147; }
+
+/* Click-through recording border */
+body.border-page { margin: 0; background: transparent; overflow: hidden; }
+.rec-border { position: fixed; inset: 0; box-sizing: border-box; border: 2px dashed #FF3B30; border-radius: 4px; pointer-events: none; }
+.rec-border[data-status="paused"] { border-color: #FF9F0A; }
+.rec-border[data-status="countdown"] { border-color: #007AFF; }
+.rec-border-tag { position: absolute; top: 4px; left: 6px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(255,59,48,.88); color: #fff; }
+.rec-border[data-status="paused"] .rec-border-tag { background: rgba(255,159,10,.9); }
+.rec-border[data-status="countdown"] .rec-border-tag { background: rgba(0,122,255,.9); }
+
+/* Countdown overlay */
+body.countdown-page { margin: 0; background: transparent; overflow: hidden; display: grid; place-items: center; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+.rec-countdown { width: 196px; height: 196px; border-radius: 50%; background: rgba(20,20,24,.88); border: 2px solid rgba(255,59,48,.85); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+.rec-countdown-num { font-size: 68px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.rec-countdown-meta { font-size: 11px; color: #34C759; font-weight: 600; }
+.rec-countdown-cancel { border: 0; border-radius: 99px; padding: 4px 12px; background: rgba(255,255,255,.14); color: #fff; font-size: 11.5px; cursor: pointer; }
+.rec-countdown-cancel:hover { background: rgba(255,255,255,.24); }
+
+/* Pin window */
+body.pin-page { margin: 0; background: #111; overflow: hidden; height: 100vh; -webkit-app-region: drag; }
+.pin-wrap { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.pin-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pin-bar { position: absolute; top: 8px; right: 8px; display: flex; gap: 5px; opacity: 0; transition: opacity .15s; -webkit-app-region: no-drag; }
+.pin-wrap:hover .pin-bar { opacity: 1; }
+.pin-badge, .pin-btn { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(20,20,24,.85); color: #fff; border: 1px solid rgba(255,255,255,.16); }
+.pin-btn { cursor: pointer; }
+.pin-btn:hover { background: rgba(60,60,68,.95); }
+.pin-btn.danger:hover { background: #FF3B30; }
+
+/* Post-recording Review Studio */
+body.review-page { margin: 0; background: #121216; color: #f4f4f6; font-family: -apple-system, BlinkMacSystemFont, sans-serif; height: 100vh; overflow: hidden; }
+.review-shell { display: flex; flex-direction: column; height: 100vh; }
+.review-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,.08); background: #18181d; }
+.review-title { margin: 0; font-size: 15px; font-weight: 600; }
+.review-sub { font-size: 12px; color: rgba(255,255,255,.6); }
+.review-top-actions { display: flex; gap: 8px; }
+.review-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); flex: 1; min-height: 0; }
+.review-sidebar { border-right: 1px solid rgba(255,255,255,.08); padding: 12px; overflow-y: auto; background: #15151a; }
+.review-side-head { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: rgba(255,255,255,.55); margin-bottom: 10px; }
+.review-history-list { display: flex; flex-direction: column; gap: 6px; }
+.review-hist-item { text-align: left; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; background: rgba(255,255,255,.04); color: #f4f4f6; cursor: pointer; }
+.review-hist-item:hover { background: rgba(255,255,255,.08); }
+.review-hist-item.on { background: rgba(0,122,255,.22); border-color: rgba(0,122,255,.6); }
+.review-hist-title { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-hist-meta { font-size: 11px; color: rgba(255,255,255,.58); margin-top: 2px; }
+.review-muted { font-size: 12px; color: rgba(255,255,255,.5); }
+.review-main { display: flex; flex-direction: column; gap: 10px; padding: 14px 18px; min-height: 0; overflow-y: auto; }
+.review-stage { flex: 1; min-height: 260px; display: grid; place-items: center; background: #0a0a0d; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); overflow: hidden; padding: 8px; }
+.review-video-wrap { position: relative; max-width: 100%; max-height: 100%; display: inline-flex; }
+.review-video { max-width: 100%; max-height: 410px; border-radius: 6px; background: #000; display: block; }
+.review-tel-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.review-key-badge { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); padding: 6px 14px; border-radius: 8px; background: rgba(16,16,20,.88); border: 1px solid rgba(255,255,255,.22); color: #fff; font-size: 14px; font-weight: 600; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.review-cam-pip { position: absolute; width: 112px; height: 112px; object-fit: cover; border: 2px solid rgba(255,255,255,.85); box-shadow: 0 6px 16px rgba(0,0,0,.5); pointer-events: none; }
+.review-cam-pip.circle { border-radius: 50%; }
+.review-cam-pip.rounded { border-radius: 16px; }
+.review-cam-pip.rect { border-radius: 4px; }
+.review-cam-pip.bl { left: 14px; bottom: 48px; }
+.review-cam-pip.br { right: 14px; bottom: 48px; }
+.review-cam-pip.tl { left: 14px; top: 14px; }
+.review-cam-pip.tr { right: 14px; top: 14px; }
+.review-cam-pip.mirror { transform: scaleX(-1); }
+.review-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.rbadge { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.82); }
+.rbadge.ok { background: rgba(52,199,89,.18); color: #6ee78f; }
+.rbadge.warn { background: rgba(255,159,10,.22); color: #ffd166; }
+.rbadge.drop { background: rgba(255,59,48,.24); color: #ff8078; }
+.rbadge.track { background: rgba(0,122,255,.18); color: #8ec5ff; }
+.review-trim-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-radius: 8px; background: #18181d; border: 1px solid rgba(255,255,255,.08); font-size: 12px; }
+.trim-lbl { color: rgba(255,255,255,.65); }
+.trim-val { font-variant-numeric: tabular-nums; min-width: 38px; font-weight: 600; }
+.trim-range { width: 110px; }
+.review-check { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; font-size: 12px; color: rgba(255,255,255,.85); }
+.review-export-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.review-export-bar .issue-cta { background: rgba(175,82,222,.28); color: #f0d8ff; border-color: rgba(175,82,222,.6); }
+.review-empty-card { flex: 1; display: grid; place-items: center; color: rgba(255,255,255,.55); font-size: 13px; }

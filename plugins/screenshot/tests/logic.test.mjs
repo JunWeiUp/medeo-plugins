@@ -6,6 +6,19 @@ import { normalize, DEFAULTS } from '../src/settings.ts';
 import { valid, fromKey, symbols } from '../src/shortcuts.ts';
 import { split, CHUNK, joinLines } from '../src/protocol.ts';
 import { formatNumber, constrain } from '../src/annotations.ts';
+import {
+  DEFAULT_RECORDING_CONFIG,
+  buildIssueSummary,
+  buildStartPayload,
+  computeBorderBounds,
+  computeCameraPipBounds,
+  computeHudBounds,
+  detectFpsHealth,
+  effectiveCodec,
+  formatBytes,
+  formatDuration,
+  normalizeRecordingConfig,
+} from '../src/recording.ts';
 
 const D = { x: 0, y: 0, w: 1000, h: 800 };
 
@@ -98,4 +111,100 @@ test('shortcuts', () => {
 test('chunks reassemble', () => {
   const s = 'x'.repeat(CHUNK * 2 + 5);
   assert.equal(split(s).length, 3); assert.equal(split(s).join(''), s); assert.deepEqual(split(''), ['']);
+});
+
+test('120Hz recording config normalization and auto HEVC selection', () => {
+  assert.deepEqual(normalizeRecordingConfig(null), DEFAULT_RECORDING_CONFIG);
+  const cfg = normalizeRecordingConfig({
+    fps: 120,
+    codec: 'auto',
+    quality: 'lossless',
+    countdown: 5,
+    systemAudio: { enabled: true, excludeSelf: false },
+    microphone: { enabled: true, deviceId: 'mic-1', mono: false },
+    camera: { enabled: true, deviceId: 'cam-1', shape: 'rounded', position: 'br', mirror: false },
+    clicks: { enabled: true, color: '#007aff', size: 'lg', sound: true },
+    keystrokes: { enabled: true, shortcutsOnly: false, position: 'bottom-left' },
+  });
+  assert.equal(cfg.fps, 120);
+  assert.equal(cfg.clicks.color, '#007AFF');
+  assert.equal(cfg.camera.shape, 'rounded');
+  assert.equal(cfg.keystrokes.shortcutsOnly, false);
+
+  // Auto codec chooses H.264 for 1080p@120, HEVC for Retina/1440p@120 and 4K@60.
+  assert.equal(effectiveCodec(cfg, 1920, 1080), 'h264');
+  assert.equal(effectiveCodec(cfg, 3024, 1964), 'hevc');
+  assert.equal(effectiveCodec({ ...cfg, fps: 60 }, 3840, 2160), 'hevc');
+  assert.equal(effectiveCodec({ ...cfg, codec: 'h264' }, 3024, 1964), 'h264');
+});
+
+test('recording HUD, border, PiP placement and start payload mapping', () => {
+  const display = { x: 0, y: 0, width: 1512, height: 982 };
+  const region = { x: 200, y: 150, width: 800, height: 500 };
+
+  const hud = computeHudBounds(region, display);
+  assert.ok(hud.y >= region.y + region.height);
+  assert.ok(hud.x >= 0 && hud.x + hud.width <= display.width);
+
+  // Fullscreen region places HUD inside bottom of display cleanly.
+  const fullHud = computeHudBounds(display, display);
+  assert.ok(fullHud.y + fullHud.height <= display.height);
+
+  // Border inflates outside captured pixels while staying inside display.
+  const border = computeBorderBounds(region, display, 4);
+  assert.deepEqual(border, { x: 196, y: 146, width: 808, height: 508 });
+
+  const pip = computeCameraPipBounds(region, 'br', 160, 16);
+  assert.equal(pip.x + pip.width, region.x + region.width - 16);
+  assert.equal(pip.y + pip.height, region.y + region.height - 16);
+
+  // Full display omits rect; cropped region converts to global coordinates.
+  const cfg = normalizeRecordingConfig({ fps: 120, microphone: { enabled: true, deviceId: 'mic-1', mono: true }, camera: { enabled: true, deviceId: 'cam-1', mirror: true }, clicks: { enabled: true }, keystrokes: { enabled: true, shortcutsOnly: true } });
+  const fullPayload = buildStartPayload('src-1', { x: 0, y: 0, w: 1512, h: 982 }, display, cfg);
+  assert.equal(fullPayload.rect, undefined);
+  assert.equal(fullPayload.fps, 120);
+  assert.deepEqual(fullPayload.telemetry, { cursor: true, keystrokes: { enabled: true, shortcuts_only: true } });
+
+  const cropPayload = buildStartPayload('src-1', { x: 100, y: 80, w: 640, h: 480 }, { x: 1512, y: 0, width: 1920, height: 1080 }, cfg);
+  assert.deepEqual(cropPayload.rect, { x: 1612, y: 80, width: 640, height: 480 });
+});
+
+test('FPS health, formatting, and Issue bundle summary', () => {
+  assert.equal(detectFpsHealth(120, 118.5, 0), 'ok');
+  assert.equal(detectFpsHealth(120, 100, 1), 'warn');
+  assert.equal(detectFpsHealth(120, 72, 0), 'drop');
+  assert.equal(detectFpsHealth(120, 119, 12), 'drop');
+  assert.equal(formatDuration(65_000), '01:05');
+  assert.equal(formatDuration(3_661_000), '01:01:01');
+  assert.equal(formatBytes(1536), '1.5 KB');
+
+  const summary = buildIssueSummary(
+    {
+      id: 'rec-1',
+      source_title: 'Built-in Retina Display',
+      status: 'completed',
+      active: false,
+      can_stop: false,
+      can_recover: false,
+      playable: true,
+      duration_ms: 12_400,
+      bytes: 4_500_000,
+      microphone: true,
+      system_audio: true,
+      width: 3024,
+      height: 1964,
+      target_fps: 120,
+      actual_fps: 119.2,
+      dropped_frames: 0,
+      codec: 'hevc',
+      telemetry_events: 420,
+      tracks: { 'capture.mp4': true, 'telemetry.jsonl': true },
+    },
+    DEFAULT_RECORDING_CONFIG,
+    new Date('2026-11-24T12:00:00Z'),
+  );
+  assert.equal(summary.schema, 'medeo.issue-recording.v1');
+  assert.equal(summary.video.target_fps, 120);
+  assert.equal(summary.video.codec, 'hevc');
+  assert.equal(summary.telemetry_events, 420);
 });
