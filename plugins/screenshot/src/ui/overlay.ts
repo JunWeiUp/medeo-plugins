@@ -1336,11 +1336,19 @@ export async function startOverlay() {
   addEventListener('keyup', e => { if (e.key === ' ') space = false; });
   $('text').addEventListener('input', autosize);
   // The overlay hides when it loses focus (another app came forward): that ends the capture.
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && shot && !busy) { console.info('overlay hidden (lost focus): cancelling'); cancel(); } });
+  // Allow a brief grace period right after a new shot arrives (e.g. while Hub closes and focus shifts).
+  let shotOpenedAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && shot && !busy && performance.now() - shotOpenedAt > 600) {
+      console.info('overlay hidden (lost focus): cancelling');
+      cancel();
+    }
+  });
   addEventListener('resize', () => { if (base) { view = { x: 0, y: 0, w: innerWidth, h: innerHeight }; sizeCanvases(); paintBase(); effects = null; dirty(true); placeBars(); } });
   channel.onMessage<ToOverlay>(m => {
     if (m?.type === 'shot') {
       reset(); prefs = loadPrefs();
+      shotOpenedAt = performance.now();
       shot = m.shot; incoming = { seq: m.shot.seq, parts: [], total: m.parts };
       if (m.shot.recording) recConfig = normalizeRecordingConfig(m.shot.recording);
       if (m.shot.mode === 'record-issue') recConfig = normalizeRecordingConfig({ ...recConfig, ...ISSUE_RECORDING_PRESET });

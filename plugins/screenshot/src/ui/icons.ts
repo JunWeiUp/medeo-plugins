@@ -38,7 +38,19 @@ export type IconName =
   | 'copy'
   | 'save'
   | 'cloud'
-  | 'open-external';
+  | 'open-external'
+  | 'sliders'
+  | 'sparkles'
+  | 'zoom-in'
+  | 'scissors'
+  | 'gauge'
+  | 'snowflake'
+  | 'sidebar'
+  | 'rotate-ccw'
+  | 'check'
+  | 'plus'
+  | 'trash'
+  | 'info';
 
 const ICONS: Record<IconName, Shape[]> = {
   volume: [
@@ -188,6 +200,71 @@ const ICONS: Record<IconName, Shape[]> = {
     ['path', 'M14 4h6v6'],
     ['line', 10, 14, 20, 4],
     ['path', 'M18 13.5V19a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19V7.5A1.5 1.5 0 0 1 5.5 6H11'],
+  ],
+  sliders: [
+    ['line', 4, 21, 4, 14],
+    ['line', 4, 10, 4, 3],
+    ['line', 12, 21, 12, 12],
+    ['line', 12, 8, 12, 3],
+    ['line', 20, 21, 20, 16],
+    ['line', 20, 12, 20, 3],
+    ['line', 2, 14, 6, 14],
+    ['line', 10, 8, 14, 8],
+    ['line', 18, 16, 22, 16],
+  ],
+  sparkles: [
+    ['path', 'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z'],
+    ['path', 'M19 3v3M17.5 4.5h3'],
+    ['path', 'M5 17v3M3.5 18.5h3'],
+  ],
+  'zoom-in': [
+    ['circle', 11, 11, 7],
+    ['line', 20, 20, 16.2, 16.2],
+    ['line', 11, 8, 11, 14],
+    ['line', 8, 11, 14, 11],
+  ],
+  scissors: [
+    ['circle', 6, 6, 3],
+    ['circle', 6, 18, 3],
+    ['line', 20, 4, 8.12, 15.88],
+    ['line', 14.47, 14.48, 20, 20],
+    ['line', 8.12, 8.12, 12, 12],
+  ],
+  gauge: [
+    ['path', 'M12 14l4-4'],
+    ['path', 'M3.5 19a9.5 9.5 0 1 1 17 0'],
+    ['circle', 12, 14, 1.5],
+  ],
+  snowflake: [
+    ['line', 12, 2.5, 12, 21.5],
+    ['line', 3.8, 7.2, 20.2, 16.8],
+    ['line', 20.2, 7.2, 3.8, 16.8],
+    ['circle', 12, 12, 2.2],
+  ],
+  sidebar: [
+    ['rect', 3, 4, 18, 16, 2.2],
+    ['line', 9, 4, 9, 20],
+  ],
+  'rotate-ccw': [
+    ['path', 'M3 12a9 9 0 1 0 3-6.7L3 8'],
+    ['path', 'M3 3v5h5'],
+  ],
+  check: [
+    ['path', 'M5 12.5l4.5 4.5L19 7.5'],
+  ],
+  plus: [
+    ['line', 12, 5, 12, 19],
+    ['line', 5, 12, 19, 12],
+  ],
+  trash: [
+    ['path', 'M4 7h16'],
+    ['path', 'M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7'],
+    ['path', 'M6.5 7l1 13a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13'],
+  ],
+  info: [
+    ['circle', 12, 12, 9],
+    ['line', 12, 16, 12, 11.5],
+    ['line', 12, 8.2, 12.01, 8.2],
   ],
 };
 

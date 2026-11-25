@@ -246,7 +246,14 @@ export function buildStartPayload(
       ? { enabled: true, exclude_self: cfg.systemAudio.excludeSelf }
       : false,
     camera: cfg.camera.enabled
-      ? { enabled: true, device_id: cfg.camera.deviceId, mirror: cfg.camera.mirror }
+      ? {
+          enabled: true,
+          device_id: cfg.camera.deviceId,
+          mirror: cfg.camera.mirror,
+          shape: cfg.camera.shape,
+          position: cfg.camera.position,
+          preview: true,
+        }
       : false,
     telemetry: {
       cursor: cfg.clicks.enabled,

@@ -19,6 +19,13 @@ import {
   formatDuration,
   normalizeRecordingConfig,
 } from '../src/recording.ts';
+import {
+  autoGenerateZooms,
+  buildExportRecipe,
+  createDefaultStudioProject,
+  evaluateZoom,
+  parseTelemetryJsonl,
+} from '../src/studio.ts';
 
 const D = { x: 0, y: 0, w: 1000, h: 800 };
 
@@ -207,4 +214,30 @@ test('FPS health, formatting, and Issue bundle summary', () => {
   assert.equal(summary.video.target_fps, 120);
   assert.equal(summary.video.codec, 'hevc');
   assert.equal(summary.telemetry_events, 420);
+});
+
+test('Studio telemetry parsing, Auto-Zoom clustering, easing, and export recipe', () => {
+  const jsonl = [
+    JSON.stringify({ type: 'header', version: 1, fps: 120 }),
+    JSON.stringify({ type: 'click', t: 1.0, down: true, button: 'left', x: 0.4, y: 0.3 }),
+    JSON.stringify({ type: 'click', t: 1.1, down: false, button: 'left', x: 0.4, y: 0.3 }),
+    JSON.stringify({ type: 'click', t: 1.5, down: true, button: 'left', x: 0.6, y: 0.5 }),
+    JSON.stringify({ type: 'key', t: 2.0, modifiers: ['⌘', '⇧'], label: '⌘⇧S', key_code: 1 }),
+  ].join('\n');
+  const parsed = parseTelemetryJsonl(jsonl);
+  assert.equal(parsed.filter(e => e.kind === 'click').length, 2);
+  assert.equal(parsed.find(e => e.kind === 'key')?.label, '⌘⇧S');
+
+  const zooms = autoGenerateZooms(parsed, 6.0);
+  assert.equal(zooms.length, 1);
+  assert.equal(zooms[0].x, 0.5);
+  assert.equal(zooms[0].y, 0.4);
+  assert.ok(evaluateZoom(1.2, zooms).scale > 1.5);
+  assert.equal(evaluateZoom(0.0, zooms).scale, 1);
+
+  const proj = createDefaultStudioProject(6.0, DEFAULT_RECORDING_CONFIG, true);
+  proj.zooms = zooms;
+  const recipe = buildExportRecipe(proj, 'mp4');
+  assert.equal(recipe.fps, DEFAULT_RECORDING_CONFIG.fps);
+  assert.equal((recipe.zooms).length, 1);
 });

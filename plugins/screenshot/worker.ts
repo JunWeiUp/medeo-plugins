@@ -8,7 +8,7 @@
 //   Medeo Netdisk, Issue Bundle for mearc/RTE).
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { channel, definePlugin, events, i18n, launcher, notifications, plugins, shortcuts, tray } from '@one2x/medeo-plugin-sdk';
@@ -71,18 +71,6 @@ let activeRec: ActiveRecording | null = null;
 let reviewRecordId: string | null = null;
 let reviewIssueMode = false;
 let reviewBusy: string | null = null;
-
-interface ExportJob {
-  id: string;
-  kind: 'save-mp4' | 'save-gif' | 'copy-file' | 'drive' | 'drive-to' | 'issue-pack';
-  tempDir: string;
-  rawFile: string;
-  trimStart?: number;
-  trimEnd?: number;
-  telemetryText?: string;
-  writes: Promise<void>;
-}
-const exportJobs = new Map<string, ExportJob>();
 
 const run = (cmd: string, args: string[], timeout = 15_000) => new Promise<string>((ok, no) =>
   execFile(cmd, args, { timeout, maxBuffer: 4 << 20 }, (error, stdout, stderr) => error ? no(new Error(String(stderr || error.message).trim())) : ok(String(stdout))));
@@ -488,8 +476,8 @@ async function openReview(recordId?: string) {
     id: REVIEW,
     entry: 'ui/review.html',
     title: await label('review.title'),
-    width: 980,
-    height: 680,
+    width: 1240,
+    height: 780,
     resizable: true,
     movable: true,
   });
@@ -514,104 +502,94 @@ async function pushReviewState() {
   await post({ type: 'review-state', state: reviewState });
 }
 
-async function finalizeReviewExport(job: ExportJob, ok: boolean) {
+async function runStudioExport(req: {
+  id: string;
+  format: 'mp4' | 'gif' | 'issue_bundle';
+  recipe: Record<string, unknown>;
+  copyFile?: boolean;
+  sendDrive?: boolean;
+  driveChoose?: boolean;
+}) {
+  reviewBusy = req.format;
+  await pushReviewState();
   try {
-    await job.writes;
-    if (!ok) return;
-    reviewBusy = job.kind;
-    await pushReviewState();
-
     const st = await captureV2.state().catch(() => ({ records: [] as CaptureRecordV2[] }));
-    const rec = st.records.find(r => r.id === job.id);
+    const rec = st.records.find(r => r.id === req.id);
     const targetDir = saveDir();
     await mkdir(targetDir, { recursive: true });
 
-    const needsTrim = job.trimStart !== undefined && job.trimEnd !== undefined && job.trimEnd > job.trimStart + 0.1;
-    let outputFile = job.rawFile;
+    const ts = stamp(new Date());
+    const fileNameWanted = req.format === 'issue_bundle'
+      ? `Medeo_Issue_${ts}`
+      : req.format === 'gif'
+        ? `Medeo_Studio_${ts}.gif`
+        : `Medeo_Studio_${ts}.mp4`;
+    const issueMeta = req.format === 'issue_bundle' && rec
+      ? (buildIssueSummary(rec, settings.recording) as unknown as Record<string, unknown>)
+      : undefined;
 
-    if (job.kind === 'save-gif') {
-      if (!ffmpegBin) throw new Error('ffmpeg_unavailable');
-      const gifName = fileName('Medeo_Rec', new Date(), n => existsSync(path.join(targetDir, n)), 'gif');
-      const gifPath = path.join(targetDir, gifName);
-      const trimArgs = needsTrim ? ['-ss', String(job.trimStart!.toFixed(2)), '-to', String(job.trimEnd!.toFixed(2))] : [];
-      const vf = 'fps=20,scale=min(1280\\,iw):-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=192[p];[s1][p]paletteuse=dither=bayer';
-      await run(ffmpegBin, ['-y', ...trimArgs, '-i', job.rawFile, '-vf', vf, gifPath], 180_000);
-      if (settings.openAfterSave) await run(OPEN, ['-R', gifPath]).catch(() => {});
-      await post({ type: 'review-toast', tone: 'success', message: await label('review.toast.saved', { name: gifName }) });
-      return;
+    const exported = await captureV2.exportCapture({
+      id: req.id,
+      format: req.format,
+      destination_dir: targetDir,
+      file_name: fileNameWanted,
+      recipe: req.recipe,
+      issue_meta: issueMeta,
+    });
+
+    if (req.copyFile && req.format !== 'issue_bundle' && exported.path) {
+      await helper('copy-file', exported.path).catch(() => {});
     }
-
-    if (needsTrim && ffmpegBin) {
-      const trimmed = path.join(job.tempDir, 'trimmed.mp4');
-      await run(ffmpegBin, [
-        '-y',
-        '-ss', String(job.trimStart!.toFixed(2)),
-        '-to', String(job.trimEnd!.toFixed(2)),
-        '-i', job.rawFile,
-        '-c', 'copy',
-        '-movflags', '+faststart',
-        trimmed,
-      ], 120_000);
-      outputFile = trimmed;
-    }
-
-    if (job.kind === 'save-mp4') {
-      const name = fileName('Medeo_Rec', new Date(), n => existsSync(path.join(targetDir, n)), 'mp4');
-      const dest = path.join(targetDir, name);
-      await copyFile(outputFile, dest);
-      if (settings.openAfterSave) await run(OPEN, ['-R', dest]).catch(() => {});
-      await post({ type: 'review-toast', tone: 'success', message: await label('review.toast.saved', { name }) });
-    } else if (job.kind === 'copy-file') {
-      const name = fileName('Medeo_Rec', new Date(), n => existsSync(path.join(targetDir, n)), 'mp4');
-      const dest = path.join(targetDir, name);
-      await copyFile(outputFile, dest);
-      const res = (await helper('copy-file', dest)).trim();
-      if (res !== 'ok') throw new Error(res);
-      await post({ type: 'review-toast', tone: 'success', message: await label('review.toast.copiedFile') });
-    } else if (job.kind === 'drive' || job.kind === 'drive-to') {
-      const name = fileName('Medeo_Rec', new Date(), () => false, 'mp4');
-      const staged = path.join(job.tempDir, name);
-      if (outputFile !== staged) await copyFile(outputFile, staged);
-      const answer = await plugins.run<{ ok?: boolean; cancelled?: boolean; error?: string }>(
+    if (req.sendDrive && exported.path) {
+      const targetFile = req.format === 'issue_bundle' ? path.join(exported.path, 'capture.mp4') : exported.path;
+      const targetName = req.format === 'issue_bundle' ? `${exported.name}.mp4` : exported.name;
+      await plugins.run<{ ok?: boolean; cancelled?: boolean; error?: string }>(
         NETDISK,
-        job.kind === 'drive-to' ? 'netdisk.store-to' : 'netdisk.store',
-        { input: { type: 'file', value: staged, title: name } },
-      );
-      if (answer?.ok) {
-        await post({ type: 'review-toast', tone: 'success', message: await label('review.toast.driveOk') });
-      } else if (!answer?.cancelled) {
-        await post({ type: 'review-toast', tone: 'error', message: await label('error.drive') });
-      }
-    } else if (job.kind === 'issue-pack') {
-      const bundleName = `Medeo_Issue_${stamp(new Date())}`;
-      const bundleDir = path.join(targetDir, bundleName);
-      await mkdir(bundleDir, { recursive: true });
-      const mp4Dest = path.join(bundleDir, 'capture.mp4');
-      await copyFile(outputFile, mp4Dest);
-      if (job.telemetryText) {
-        await writeFile(path.join(bundleDir, 'telemetry.jsonl'), job.telemetryText, 'utf8');
-      }
-      if (rec) {
-        const summary = buildIssueSummary(rec, settings.recording);
-        await writeFile(path.join(bundleDir, 'issue-meta.json'), JSON.stringify(summary, null, 2) + '\n', 'utf8');
-        const md = [
-          `### Medeo Issue Recording (${bundleName})`,
-          `- **Duration**: ${formatDuration(rec.duration_ms)}`,
-          `- **Video**: ${rec.width ?? '?'}×${rec.height ?? '?'} @ ${rec.actual_fps ? Math.round(rec.actual_fps) : rec.target_fps ?? settings.recording.fps}fps (${(rec.codec ?? 'auto').toUpperCase()}, dropped: ${rec.dropped_frames ?? 0})`,
-          `- **Telemetry**: ${rec.telemetry_events ?? 0} events (clicks=${settings.recording.clicks.enabled}, keystrokes=${settings.recording.keystrokes.enabled})`,
-          `- **Local bundle**: \`${bundleDir}\``,
-        ].join('\n');
-        await copyText(md);
-      }
-      await run(OPEN, ['-R', bundleDir]).catch(() => {});
-      await post({ type: 'review-toast', tone: 'success', message: await label('review.toast.issuePacked', { name: bundleName }) });
+        req.driveChoose ? 'netdisk.store-to' : 'netdisk.store',
+        { input: { type: 'file', value: targetFile, title: targetName } },
+      ).catch(() => {});
     }
+    if (req.format === 'issue_bundle' && rec) {
+      const md = [
+        `### Medeo Issue Recording (${exported.name})`,
+        `- **Duration**: ${formatDuration(exported.duration_ms || rec.duration_ms)}`,
+        `- **Video**: ${exported.width}×${exported.height} @ ${rec.actual_fps ? Math.round(rec.actual_fps) : rec.target_fps ?? settings.recording.fps}fps (${(exported.codec ?? rec.codec ?? 'auto').toUpperCase()}, dropped: ${rec.dropped_frames ?? 0})`,
+        `- **Telemetry**: ${rec.telemetry_events ?? 0} events`,
+        `- **Local bundle**: \`${exported.path}\``,
+      ].join('\n');
+      await copyText(md);
+    }
+    if (settings.openAfterSave && exported.path) {
+      await run(OPEN, ['-R', exported.path]).catch(() => {});
+    }
+    await post({
+      type: 'review-export-done',
+      result: {
+        ok: true,
+        format: req.format,
+        path: exported.path,
+        name: exported.name,
+        bytes: exported.bytes,
+        width: exported.width,
+        height: exported.height,
+      },
+    });
+    const toastMsg = req.format === 'issue_bundle'
+      ? await label('review.toast.issuePacked', { name: exported.name })
+      : req.copyFile
+        ? await label('review.toast.copiedFile')
+        : await label('review.toast.saved', { name: exported.name });
+    await post({ type: 'review-toast', tone: 'success', message: toastMsg });
+    void pushHubState();
   } catch (error) {
-    console.error('review export failed:', error);
+    console.error('studio export failed:', error);
+    await post({
+      type: 'review-export-done',
+      result: { ok: false, format: req.format, error: String(error) },
+    });
     await post({ type: 'review-toast', tone: 'error', message: await label('review.exportFailed') });
   } finally {
     reviewBusy = null;
-    await rm(job.tempDir, { recursive: true, force: true }).catch(() => {});
     await pushReviewState();
   }
 }
@@ -834,49 +812,27 @@ function onMessage(m: FromWindow) {
       break;
     }
 
-    // Review studio
+    // Review / Studio editor
     case 'review-ready': void pushReviewState(); break;
     case 'review-select': reviewRecordId = m.id; void pushReviewState(); break;
     case 'review-reveal': void captureV2.open(m.id, 'reveal').catch(() => {}); break;
+    case 'review-reveal-path': {
+      const base = path.resolve(saveDir());
+      const wanted = path.resolve(m.filePath);
+      if ((wanted === base || wanted.startsWith(base + path.sep)) && existsSync(wanted)) {
+        void run(OPEN, ['-R', wanted]).catch(() => {});
+      }
+      break;
+    }
     case 'review-record-new':
       void serial(async () => {
         await windowsV2.hide(REVIEW).catch(() => {});
         await shoot(m.issueMode ? 'record-issue' : 'record', 250);
       });
       break;
-    case 'review-export-start': {
-      const p = (async () => {
-        const tempDir = await mkdtemp(path.join(dir, 'export-'));
-        const rawFile = path.join(tempDir, 'capture.mp4');
-        await writeFile(rawFile, Buffer.alloc(0));
-        exportJobs.set(m.jobId, {
-          id: m.id,
-          kind: m.kind,
-          tempDir,
-          rawFile,
-          trimStart: m.trimStart,
-          trimEnd: m.trimEnd,
-          telemetryText: m.telemetryText,
-          writes: Promise.resolve(),
-        });
-      })();
-      void p.catch(err => console.error('export start failed:', err));
+    case 'review-studio-export':
+      void serial(() => runStudioExport(m));
       break;
-    }
-    case 'review-export-chunk': {
-      const job = exportJobs.get(m.jobId);
-      if (job) {
-        const buf = Buffer.from(m.data, 'base64');
-        job.writes = job.writes.then(() => appendFile(job.rawFile, buf));
-      }
-      break;
-    }
-    case 'review-export-end': {
-      const job = exportJobs.get(m.jobId);
-      exportJobs.delete(m.jobId);
-      if (job) void serial(() => finalizeReviewExport(job, m.ok));
-      break;
-    }
 
     // Settings
     case 'settings-ready': void pushSettings(); break;

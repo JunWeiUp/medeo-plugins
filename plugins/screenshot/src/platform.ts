@@ -88,7 +88,14 @@ export interface CaptureStartArgsV2 {
   exclude_plugin_windows?: boolean;
   microphone?: boolean | { enabled: boolean; device_id?: string | null; mono?: boolean };
   system_audio?: boolean | { enabled: boolean; exclude_self?: boolean };
-  camera?: boolean | { enabled: boolean; device_id?: string | null; mirror?: boolean };
+  camera?: boolean | {
+    enabled: boolean;
+    device_id?: string | null;
+    mirror?: boolean;
+    shape?: 'circle' | 'rounded' | 'rect';
+    position?: 'tl' | 'tr' | 'bl' | 'br';
+    preview?: boolean;
+  };
   separate_audio?: boolean;
   telemetry?: {
     cursor?: boolean;
@@ -123,6 +130,26 @@ export interface CaptureRecordV2 {
   telemetry_events?: number;
   tracks?: Record<string, boolean>;
   camera_fallback?: boolean;
+}
+
+export interface ReadTrackResult {
+  id: string;
+  track: string;
+  content: string;
+  bytes: number;
+  truncated: boolean;
+}
+
+export interface StudioExportResult {
+  ok: boolean;
+  format: 'mp4' | 'gif' | 'issue_bundle';
+  path: string;
+  name: string;
+  bytes: number;
+  duration_ms: number;
+  width: number;
+  height: number;
+  codec?: string;
 }
 
 const TRACK_FILE: Record<CaptureTrack, string> = {
@@ -179,6 +206,16 @@ export const captureV2 = {
   open: (id: string, mode: 'play' | 'reveal' = 'play') => capabilities.invoke('capture.open', { id, mode }),
   mediaUrl: (id: string, track: CaptureTrack = 'screen') =>
     capabilities.invoke<{ url: string; track: string }>('capture.mediaUrl', { id, track }),
+  readTrack: (id: string, track: 'telemetry' | 'telemetry.jsonl' = 'telemetry.jsonl') =>
+    capabilities.invoke<ReadTrackResult>('capture.readTrack', { id, track }),
+  exportCapture: (args: {
+    id: string;
+    format: 'mp4' | 'gif' | 'issue_bundle';
+    destination_dir?: string;
+    file_name?: string;
+    recipe?: Record<string, unknown>;
+    issue_meta?: Record<string, unknown>;
+  }) => capabilities.invoke<StudioExportResult>('capture.export', args as unknown as Record<string, unknown>),
   trackURL: (id: string, track: CaptureTrack = 'screen') =>
     `${location.origin}/_capture/${encodeURIComponent(id)}/${TRACK_FILE[track]}`,
 };

@@ -135,15 +135,34 @@ export type FromBorder = { type: 'border-ready' };
 export type ToCountdown = { type: 'countdown-state'; state: CountdownState };
 export type FromCountdown = { type: 'countdown-ready' } | { type: 'countdown-cancel' };
 
+export interface ReviewExportDone {
+  ok: boolean;
+  format: 'mp4' | 'gif' | 'issue_bundle';
+  path?: string;
+  name?: string;
+  bytes?: number;
+  width?: number;
+  height?: number;
+  error?: string;
+}
+
 export type ToReview =
   | { type: 'review-state'; state: ReviewState }
-  | { type: 'review-toast'; tone: 'success' | 'error'; message: string };
+  | { type: 'review-toast'; tone: 'success' | 'error'; message: string }
+  | { type: 'review-export-done'; result: ReviewExportDone };
 export type FromReview =
   | { type: 'review-ready' }
   | { type: 'review-select'; id: string }
-  | { type: 'review-export-start'; jobId: string; id: string; kind: 'save-mp4' | 'save-gif' | 'copy-file' | 'drive' | 'drive-to' | 'issue-pack'; trimStart?: number; trimEnd?: number; telemetryText?: string }
-  | { type: 'review-export-chunk'; jobId: string; index: number; data: string }
-  | { type: 'review-export-end'; jobId: string; ok: boolean }
+  | {
+      type: 'review-studio-export';
+      id: string;
+      format: 'mp4' | 'gif' | 'issue_bundle';
+      recipe: Record<string, unknown>;
+      copyFile?: boolean;
+      sendDrive?: boolean;
+      driveChoose?: boolean;
+    }
+  | { type: 'review-reveal-path'; filePath: string }
   | { type: 'review-reveal'; id: string }
   | { type: 'review-record-new'; issueMode: boolean };
 
