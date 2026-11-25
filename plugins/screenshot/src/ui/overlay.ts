@@ -15,6 +15,7 @@ import {
   handles, hit, meaningful, optionsFor, spotlight, translate, type Ann, type Env, type HandleId, type Options, type Text, type Tool,
 } from '../annotations.ts';
 import { DEFAULT_BEAUTY, FRAME_BAR, GRADIENTS, beautify, drawFrame, fillGradient, type Beauty } from '../beautify.ts';
+import { svgIcon, type IconName } from './icons.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const post = (m: FromOverlay) => channel.post(m);
@@ -487,15 +488,10 @@ function buildBars() {
     btn('redo', tr('action.redo'), 'screenshot.action.redo', redo));
   const actions = $('actions'); actions.replaceChildren();
   addEventListener('pointerdown', e => { driveAlt = e.altKey; }, { capture: true });
-  const pinBtn = el('button', 'tb pin-tb', '📌');
-  pinBtn.title = tr('action.pin');
-  pinBtn.setAttribute('aria-label', tr('action.pin'));
-  pinBtn.dataset.testid = 'screenshot.action.pin';
-  pinBtn.addEventListener('click', e => { e.stopPropagation(); void finish('pin'); });
   actions.append(
     btn('copy', tr('action.copy'), 'screenshot.action.copy', () => void finish('copy'), 'tb primary'),
     btn('save', tr('action.save'), 'screenshot.action.save', () => void finish('save')),
-    pinBtn,
+    btn('pin', tr('action.pin'), 'screenshot.action.pin', () => void finish('pin')),
     btn('cloud', `${tr('action.drive')} (⇧⌘S)`, 'screenshot.action.drive', () => void toDrive(driveAlt), 'tb drive'),
     btn('ocr', tr('action.ocr'), 'screenshot.action.ocr', () => void runOcr()),
     btn('beautify', tr('action.beautify'), 'screenshot.action.beautify', () => togglePopover('beauty')),
@@ -665,15 +661,16 @@ function renderModeBar() {
   const bar = $('modebar');
   if (!shot || phase === 'idle') { bar.hidden = true; return; }
   bar.replaceChildren();
-  const items: { mode: Mode; label: string; testid: string }[] = [
-    { mode: 'area', label: tr('mode.screenshot'), testid: 'screenshot.mode.area' },
-    { mode: 'record', label: tr('mode.record'), testid: 'screenshot.mode.record' },
-    { mode: 'record-issue', label: tr('mode.recordIssue'), testid: 'screenshot.mode.recordIssue' },
+  const items: { mode: Mode; icon: IconName; label: string; testid: string }[] = [
+    { mode: 'area', icon: 'crop', label: tr('mode.screenshot'), testid: 'screenshot.mode.area' },
+    { mode: 'record', icon: 'record-dot', label: tr('mode.record'), testid: 'screenshot.mode.record' },
+    { mode: 'record-issue', icon: 'bug', label: tr('mode.recordIssue'), testid: 'screenshot.mode.recordIssue' },
   ];
   for (const it of items) {
     const active = it.mode === 'area' ? !isRecordMode() : shot.mode === it.mode;
-    const b = el('button', `mode-pill${active ? ' on' : ''}${it.mode !== 'area' ? ' rec' : ''}`, it.label);
+    const b = el('button', `mode-pill${active ? ' on' : ''}${it.mode !== 'area' ? ' rec' : ''}`);
     b.dataset.testid = it.testid;
+    b.append(svgIcon(it.icon, 14), el('span', '', it.label));
     b.addEventListener('click', e => { e.stopPropagation(); setOverlayMode(it.mode); });
     bar.append(b);
   }
@@ -826,24 +823,25 @@ function renderRecordBar() {
     fmtSeg.append(b);
   }
 
-  // 5 core recording feature chips with inline config popovers
+  // 5 core recording feature chips with crisp monochrome SVG icons + inline config popovers
   const chip = (
     id: 'rec-sys' | 'rec-mic' | 'rec-cam' | 'rec-clicks' | 'rec-keys',
-    iconText: string,
+    iconName: IconName,
     labelText: string,
     on: boolean,
     testid: string,
   ) => {
     const b = el('button', `rec-chip${on ? ' on' : ''}${popover === id ? ' open' : ''}`);
     b.dataset.testid = testid;
-    b.append(el('span', 'rec-chip-ic', iconText), el('span', '', labelText));
+    b.append(svgIcon(iconName, 14, 'rec-chip-ic'), el('span', '', labelText), svgIcon('chevron-down', 11, 'rec-chip-caret'));
     b.addEventListener('click', e => { e.stopPropagation(); togglePopover(id); });
     return b;
   };
 
-  const cdBtn = el('button', `rec-chip${recConfig.countdown > 0 ? ' on' : ''}`, recConfig.countdown ? `${recConfig.countdown}s` : tr('rec.countdown.off'));
+  const cdBtn = el('button', `rec-chip${recConfig.countdown > 0 ? ' on' : ''}`);
   cdBtn.dataset.testid = 'recorder.bar.countdown';
   cdBtn.title = tr('rec.countdown.title');
+  cdBtn.append(svgIcon('timer', 14, 'rec-chip-ic'), el('span', '', recConfig.countdown ? `${recConfig.countdown}s` : tr('rec.countdown.off')));
   cdBtn.addEventListener('click', e => {
     e.stopPropagation();
     const order: CountdownSeconds[] = [0, 3, 5];
@@ -851,8 +849,9 @@ function renderRecordBar() {
     updateRecConfig({ countdown: next });
   });
 
-  const startBtn = el('button', 'rec-start-btn', `● ${tr('rec.start')}`);
+  const startBtn = el('button', 'rec-start-btn');
   startBtn.dataset.testid = 'recorder.bar.start';
+  startBtn.append(svgIcon('record-dot', 13, 'rec-start-ic'), el('span', '', tr('rec.start')));
   startBtn.addEventListener('click', e => { e.stopPropagation(); void startRecordingNow(); });
 
   const cancelBtn = btn('close', tr('action.cancel'), 'recorder.bar.cancel', cancel, 'tb small');
@@ -862,11 +861,11 @@ function renderRecordBar() {
     codecTag,
     fmtSeg,
     sep(),
-    chip('rec-sys', '🔊', tr('rec.sys'), recConfig.systemAudio.enabled, 'recorder.bar.sys'),
-    chip('rec-mic', '🎙', tr('rec.mic'), recConfig.microphone.enabled, 'recorder.bar.mic'),
-    chip('rec-cam', '📷', tr('rec.cam'), recConfig.camera.enabled, 'recorder.bar.cam'),
-    chip('rec-clicks', '🖱', tr('rec.clicks'), recConfig.clicks.enabled, 'recorder.bar.clicks'),
-    chip('rec-keys', '⌨', tr('rec.keys'), recConfig.keystrokes.enabled, 'recorder.bar.keys'),
+    chip('rec-sys', recConfig.systemAudio.enabled ? 'volume' : 'volume-off', tr('rec.sys'), recConfig.systemAudio.enabled, 'recorder.bar.sys'),
+    chip('rec-mic', recConfig.microphone.enabled ? 'mic' : 'mic-off', tr('rec.mic'), recConfig.microphone.enabled, 'recorder.bar.mic'),
+    chip('rec-cam', recConfig.camera.enabled ? 'camera' : 'camera-off', tr('rec.cam'), recConfig.camera.enabled, 'recorder.bar.cam'),
+    chip('rec-clicks', 'click-ripple', tr('rec.clicks'), recConfig.clicks.enabled, 'recorder.bar.clicks'),
+    chip('rec-keys', 'keyboard', tr('rec.keys'), recConfig.keystrokes.enabled, 'recorder.bar.keys'),
     sep(),
     cdBtn,
     startBtn,

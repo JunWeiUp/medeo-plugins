@@ -3,6 +3,7 @@
 import { channel, i18n } from '@one2x/medeo-plugin-sdk';
 import type { FromHud, HudState, ToHud } from '../protocol.ts';
 import { detectFpsHealth, formatDuration } from '../recording.ts';
+import { svgIcon } from './icons.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const post = (m: FromHud) => channel.post(m);
@@ -54,12 +55,12 @@ function render() {
     const micBtn = el('button', `hud-icon-btn${s.micMuted ? ' muted' : ' active'}`);
     micBtn.dataset.testid = 'recorder.hud.mic';
     micBtn.title = tr(s.micMuted ? 'hud.mic.unmute' : 'hud.mic.mute');
-    micBtn.textContent = s.micMuted ? '🎙✕' : '🎙';
+    micBtn.setAttribute('aria-label', micBtn.title);
     const vu = el('span', 'hud-vu');
     const fill = el('span', 'hud-vu-fill');
     fill.style.width = `${Math.round(Math.min(1, Math.max(0, s.micMuted ? 0 : s.micLevel * 2.2)) * 100)}%`;
     vu.append(fill);
-    micBtn.append(vu);
+    micBtn.append(svgIcon(s.micMuted ? 'mic-off' : 'mic', 14), vu);
     micBtn.addEventListener('click', () => void post({ type: 'hud-toggle-mic' }));
     meters.append(micBtn);
   }
@@ -67,29 +68,36 @@ function render() {
     const sysBtn = el('button', `hud-icon-btn${s.sysMuted ? ' muted' : ' active'}`);
     sysBtn.dataset.testid = 'recorder.hud.sys';
     sysBtn.title = tr(s.sysMuted ? 'hud.sys.unmute' : 'hud.sys.mute');
-    sysBtn.textContent = s.sysMuted ? '🔇' : '🔊';
+    sysBtn.setAttribute('aria-label', sysBtn.title);
+    sysBtn.append(svgIcon(s.sysMuted ? 'volume-off' : 'volume', 14));
     sysBtn.addEventListener('click', () => void post({ type: 'hud-toggle-sys' }));
     meters.append(sysBtn);
   }
   if (s.cameraEnabled) {
-    const camTag = el('span', `hud-pill${s.cameraFallback ? ' warn' : ' ok'}`, s.cameraFallback ? 'CAM!' : 'CAM');
+    const camTag = el('span', `hud-pill hud-cam-pill${s.cameraFallback ? ' warn' : ' ok'}`);
     camTag.title = tr(s.cameraFallback ? 'hud.camera.fallback' : 'hud.camera.active');
+    camTag.append(svgIcon(s.cameraFallback ? 'camera-off' : 'camera', 12), el('span', '', s.cameraFallback ? 'CAM!' : 'CAM'));
     meters.append(camTag);
   }
 
   const controls = el('div', 'hud-controls');
-  const pauseBtn = el('button', 'hud-btn', s.paused ? '▶' : '⏸');
+  const pauseBtn = el('button', 'hud-btn');
   pauseBtn.dataset.testid = 'recorder.hud.pause';
   pauseBtn.title = tr(s.paused ? 'hud.resume' : 'hud.pause');
+  pauseBtn.setAttribute('aria-label', pauseBtn.title);
+  pauseBtn.append(svgIcon(s.paused ? 'play' : 'pause', 13));
   pauseBtn.addEventListener('click', () => void post({ type: s.paused ? 'hud-resume' : 'hud-pause' }));
 
-  const stopBtn = el('button', 'hud-stop', `■ ${tr('hud.stop')}`);
+  const stopBtn = el('button', 'hud-stop');
   stopBtn.dataset.testid = 'recorder.hud.stop';
+  stopBtn.append(svgIcon('stop', 11), el('span', '', tr('hud.stop')));
   stopBtn.addEventListener('click', () => void post({ type: 'hud-stop' }));
 
-  const cancelBtn = el('button', 'hud-btn ghost', '✕');
+  const cancelBtn = el('button', 'hud-btn ghost');
   cancelBtn.dataset.testid = 'recorder.hud.cancel';
   cancelBtn.title = tr('hud.cancel');
+  cancelBtn.setAttribute('aria-label', cancelBtn.title);
+  cancelBtn.append(svgIcon('close', 13));
   cancelBtn.addEventListener('click', () => void post({ type: 'hud-cancel' }));
 
   controls.append(pauseBtn, stopBtn, cancelBtn);

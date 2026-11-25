@@ -82,6 +82,23 @@ export interface PinPayload {
   height: number;
 }
 
+export interface HubRecentScreenshot {
+  name: string;
+  path: string;
+  size: number;
+  mtimeMs: number;
+}
+
+export interface HubState {
+  settings: Settings;
+  saveDir: string;
+  displayRefreshRate: number;
+  recordingActive: boolean;
+  recentRecordings: CaptureRecordV2[];
+  recentScreenshots: HubRecentScreenshot[];
+  devices: CaptureDevicesResult | null;
+}
+
 export type ToOverlay =
   | { type: 'shot'; shot: Shot; parts: number }
   | { type: 'chunk'; seq: number; i: number; data: string }
@@ -150,8 +167,19 @@ export type FromSettings =
   | { type: 'capture' }
   | { type: 'record' };
 
-export type ToWindow = ToOverlay | ToSettings | ToHud | ToBorder | ToCountdown | ToReview | ToPin;
-export type FromWindow = FromOverlay | FromSettings | FromHud | FromBorder | FromCountdown | FromReview | FromPin;
+export type ToHub = { type: 'hub-state'; state: HubState };
+export type FromHub =
+  | { type: 'hub-ready' }
+  | { type: 'hub-shoot'; mode: Mode }
+  | { type: 'hub-stop-recording' }
+  | { type: 'hub-update-recording'; patch: Partial<RecordingConfig> }
+  | { type: 'hub-open-review'; id?: string }
+  | { type: 'hub-reveal-file'; filePath?: string }
+  | { type: 'hub-open-settings' }
+  | { type: 'hub-open-privacy'; pane: 'screen' | 'mic' | 'camera' | 'input' };
+
+export type ToWindow = ToOverlay | ToSettings | ToHud | ToBorder | ToCountdown | ToReview | ToPin | ToHub;
+export type FromWindow = FromOverlay | FromSettings | FromHud | FromBorder | FromCountdown | FromReview | FromPin | FromHub;
 
 /** Under the 1 MiB channel limit with room for the envelope. */
 export const CHUNK = 768 * 1024;

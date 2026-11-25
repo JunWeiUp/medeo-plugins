@@ -8,7 +8,7 @@
 //   Medeo Netdisk, Issue Bundle for mearc/RTE).
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { appendFile, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { channel, definePlugin, events, i18n, launcher, notifications, plugins, shortcuts, tray } from '@one2x/medeo-plugin-sdk';
@@ -17,7 +17,7 @@ import { expandHome, fileName, stamp } from './src/naming.ts';
 import { captureV2, windowsV2, type CaptureDevicesResult, type CaptureRecordV2, type WindowBounds } from './src/platform.ts';
 import {
   joinLines, split,
-  type Action, type BorderState, type FromWindow, type HudState, type Mode,
+  type Action, type BorderState, type FromWindow, type HubRecentScreenshot, type HubState, type HudState, type Mode,
   type PinPayload, type ReviewState, type SettingsState, type Shot, type ToWindow,
 } from './src/protocol.ts';
 import {
@@ -117,6 +117,7 @@ async function fetchDevices(refresh = false): Promise<CaptureDevicesResult | nul
     if (res?.status === 'ready') {
       lastDevices = res;
       void post({ type: 'devices', devices: res });
+      void pushHubState();
       return res;
     }
   } catch (error) {
@@ -263,6 +264,7 @@ async function saveImage(png: Buffer, mime: string) {
     await writeFile(file, png, { flag: 'wx' });
     if (settings.openAfterSave) await run(OPEN, ['-R', file]).catch(() => {});
     await notifications.show('saved', await label('notify.saved.title'), await label('notify.saved.body', { name, folder: target })).catch(() => {});
+    void pushHubState();
   } catch (error) {
     console.error('save failed:', error);
     await notify('error.save', { folder: target });
@@ -405,6 +407,7 @@ async function attachActiveRecording(id: string, localRect: Rect, rawConfig: Rec
   await post({ type: 'border-state', state: borderState });
   await post({ type: 'hud-state', state: hudState });
   await showTray().catch(() => {});
+  void pushHubState();
 
   activeRec.pollTimer = setInterval(() => {
     void pollActiveRecording();
@@ -466,6 +469,7 @@ async function teardownActiveRecording(finalRow: CaptureRecordV2, issueMode: boo
   await windowsV2.close(HUD).catch(() => {});
   await windowsV2.close(BORDER).catch(() => {});
   await showTray().catch(() => {});
+  void pushHubState();
 
   if (finalRow.status === 'cancelled') return;
   if (!finalRow.playable) {
@@ -626,9 +630,50 @@ async function setSettings(patch: Partial<Settings>) {
   await writeFile(settingsFile, JSON.stringify(settings));
   await registerShortcuts();
   await pushSettings();
+  await pushHubState();
 }
 
 const pushSettings = () => post({ type: 'settings', state: { settings, saveDir: saveDir(), errors } });
+
+async function listRecentScreenshots(limit = 4): Promise<HubRecentScreenshot[]> {
+  const target = saveDir();
+  try {
+    const entries = await readdir(target);
+    const files: HubRecentScreenshot[] = [];
+    for (const name of entries) {
+      if (!/\.(png|jpe?g)$/i.test(name) || name.startsWith('.')) continue;
+      const full = path.join(target, name);
+      try {
+        const info = await stat(full);
+        if (info.isFile()) files.push({ name, path: full, size: info.size, mtimeMs: info.mtimeMs });
+      } catch {}
+    }
+    files.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    return files.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+async function pushHubState() {
+  const st = await captureV2.state().catch(() => ({ records: [] as CaptureRecordV2[] }));
+  const recentRecordings = (st.records ?? []).filter(r => r.playable).slice(0, 6);
+  const recentScreenshots = await listRecentScreenshots(4);
+  const maxHz = Math.max(
+    60,
+    ...(lastDevices?.displays ?? []).map(d => d.refresh_rate || 60),
+  );
+  const hubState: HubState = {
+    settings,
+    saveDir: saveDir(),
+    displayRefreshRate: maxHz,
+    recordingActive: activeRec !== null,
+    recentRecordings,
+    recentScreenshots,
+    devices: lastDevices,
+  };
+  await post({ type: 'hub-state', state: hubState });
+}
 
 /** Shortcut id (as registered) ↔ settings key ↔ capture mode. */
 const MODES: Record<string, { key: ShortcutKey; mode: Mode }> = {
@@ -841,6 +886,40 @@ function onMessage(m: FromWindow) {
     case 'open-privacy': void run(OPEN, [PRIVACY_URL[m.pane ?? 'screen']]).catch(() => {}); break;
     case 'capture': void serial(async () => { await windowsV2.hide(SETTINGS).catch(() => {}); await shoot('area', 250); }); break;
     case 'record': void serial(async () => { await windowsV2.hide(SETTINGS).catch(() => {}); await shoot('record', 250); }); break;
+
+    // Hub launcher window
+    case 'hub-ready':
+      void fetchDevices(false);
+      void pushHubState();
+      break;
+    case 'hub-shoot':
+      void serial(() => shoot(m.mode, 280));
+      break;
+    case 'hub-stop-recording':
+      void stopRecording(false);
+      break;
+    case 'hub-update-recording':
+      void serial(() => setSettings({ recording: normalizeRecordingConfig({ ...settings.recording, ...m.patch }) }));
+      break;
+    case 'hub-open-review':
+      void openReview(m.id).catch(() => {});
+      break;
+    case 'hub-reveal-file': {
+      const base = path.resolve(saveDir());
+      const wanted = m.filePath ? path.resolve(m.filePath) : '';
+      if (wanted && (wanted === base || wanted.startsWith(base + path.sep)) && existsSync(wanted)) {
+        void run(OPEN, ['-R', wanted]).catch(() => {});
+      } else {
+        void revealFolder().catch(() => {});
+      }
+      break;
+    }
+    case 'hub-open-settings':
+      void openSettings().catch(() => {});
+      break;
+    case 'hub-open-privacy':
+      void run(OPEN, [PRIVACY_URL[m.pane] ?? PRIVACY_URL.screen]).catch(() => {});
+      break;
   }
 }
 

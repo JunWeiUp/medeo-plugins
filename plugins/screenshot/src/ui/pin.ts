@@ -3,6 +3,7 @@
 import { channel, i18n } from '@one2x/medeo-plugin-sdk';
 import { windowsV2 } from '../platform.ts';
 import type { FromPin, PinPayload, ToPin } from '../protocol.ts';
+import { svgIcon } from './icons.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -13,8 +14,14 @@ export async function startPin() {
   let pinId = params.get('id') || 'pin-1';
   let opacity = 1.0;
 
-  $('pin-copy').textContent = tr('action.copy').replace(/\s*\(.*\)$/, '');
-  $('pin-save').textContent = tr('action.save').replace(/\s*\(.*\)$/, '');
+  const copyBtn = $('pin-copy');
+  copyBtn.replaceChildren(svgIcon('copy', 12), document.createTextNode(tr('action.copy').replace(/\s*\(.*\)$/, '')));
+  const saveBtn = $('pin-save');
+  saveBtn.replaceChildren(svgIcon('save', 12), document.createTextNode(tr('action.save').replace(/\s*\(.*\)$/, '')));
+  const closeBtn = $('pin-close');
+  closeBtn.replaceChildren(svgIcon('close', 12));
+  closeBtn.title = tr('action.close');
+  closeBtn.setAttribute('aria-label', tr('action.close'));
 
   const post = (m: FromPin) => channel.post(m);
   $('pin-copy').addEventListener('click', () => void post({ type: 'pin-copy', id: pinId }));

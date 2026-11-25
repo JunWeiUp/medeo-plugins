@@ -7,6 +7,7 @@ import { channel, i18n } from '@one2x/medeo-plugin-sdk';
 import { captureV2, type CaptureRecordV2 } from '../platform.ts';
 import type { FromReview, ReviewState, ToReview } from '../protocol.ts';
 import { detectFpsHealth, formatBytes, formatDuration } from '../recording.ts';
+import { svgIcon, type IconName } from './icons.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const post = (m: FromReview) => channel.post(m);
@@ -210,13 +211,16 @@ function render() {
     el('h2', 'review-title', tr('review.title')),
     el('span', 'review-sub', rec ? `${rec.source_title} · ${formatDuration(rec.duration_ms)}` : tr('review.empty')),
   );
+  const iconBtn = (cls: string, iconName: IconName, text: string, testid: string, onClick: (e: MouseEvent) => void) => {
+    const b = el('button', `${cls} ic-btn`);
+    b.dataset.testid = testid;
+    b.append(svgIcon(iconName, 14), el('span', '', text));
+    b.addEventListener('click', onClick);
+    return b;
+  };
   const topActions = el('div', 'review-top-actions');
-  const newRec = el('button', 'pill', tr('review.newRecord'));
-  newRec.dataset.testid = 'recorder.review.new';
-  newRec.addEventListener('click', () => void post({ type: 'review-record-new', issueMode: false }));
-  const newIssue = el('button', 'pill', tr('review.newIssue'));
-  newIssue.dataset.testid = 'recorder.review.newIssue';
-  newIssue.addEventListener('click', () => void post({ type: 'review-record-new', issueMode: true }));
+  const newRec = iconBtn('pill', 'record-dot', tr('review.newRecord'), 'recorder.review.new', () => void post({ type: 'review-record-new', issueMode: false }));
+  const newIssue = iconBtn('pill', 'bug', tr('review.newIssue'), 'recorder.review.newIssue', () => void post({ type: 'review-record-new', issueMode: true }));
   topActions.append(newRec, newIssue);
   header.append(titleWrap, topActions);
 
@@ -385,35 +389,23 @@ function render() {
     const isTrimmed = trimStart > 0.05 || trimEnd < totalSec - 0.1;
     const trimArgs = isTrimmed ? { trimStart, trimEnd } : undefined;
 
-    const saveMp4 = el('button', 'cta', state.busyAction === 'save-mp4' || exporting ? tr('review.working') : tr('review.saveMp4'));
+    const saveMp4 = iconBtn('cta', 'save', state.busyAction === 'save-mp4' || exporting ? tr('review.working') : tr('review.saveMp4'), 'recorder.review.saveMp4', () => void streamExport(rec, 'save-mp4', trimArgs));
     saveMp4.disabled = busy;
-    saveMp4.dataset.testid = 'recorder.review.saveMp4';
-    saveMp4.addEventListener('click', () => void streamExport(rec, 'save-mp4', trimArgs));
 
-    const saveGif = el('button', 'pill', state.busyAction === 'save-gif' ? tr('review.working') : tr('review.exportGif'));
+    const saveGif = iconBtn('pill', 'film', state.busyAction === 'save-gif' ? tr('review.working') : tr('review.exportGif'), 'recorder.review.exportGif', () => void streamExport(rec, 'save-gif', trimArgs));
     saveGif.disabled = busy || !state.ffmpegAvailable;
     saveGif.title = state.ffmpegAvailable ? '' : tr('review.noFfmpeg');
-    saveGif.dataset.testid = 'recorder.review.exportGif';
-    saveGif.addEventListener('click', () => void streamExport(rec, 'save-gif', trimArgs));
 
-    const copyBtn = el('button', 'pill', tr('review.copyFile'));
+    const copyBtn = iconBtn('pill', 'copy', tr('review.copyFile'), 'recorder.review.copyFile', () => void streamExport(rec, 'copy-file'));
     copyBtn.disabled = busy;
-    copyBtn.dataset.testid = 'recorder.review.copyFile';
-    copyBtn.addEventListener('click', () => void streamExport(rec, 'copy-file'));
 
-    const driveBtn = el('button', 'pill', tr('review.drive'));
+    const driveBtn = iconBtn('pill', 'cloud', tr('review.drive'), 'recorder.review.drive', e => void streamExport(rec, e.altKey ? 'drive-to' : 'drive'));
     driveBtn.disabled = busy;
-    driveBtn.dataset.testid = 'recorder.review.drive';
-    driveBtn.addEventListener('click', e => void streamExport(rec, e.altKey ? 'drive-to' : 'drive'));
 
-    const issueBtn = el('button', `pill${state.issueMode ? ' issue-cta' : ''}`, tr('review.packIssue'));
+    const issueBtn = iconBtn(`pill${state.issueMode ? ' issue-cta' : ''}`, 'bug', tr('review.packIssue'), 'recorder.review.packIssue', () => void streamExport(rec, 'issue-pack', trimArgs));
     issueBtn.disabled = busy;
-    issueBtn.dataset.testid = 'recorder.review.packIssue';
-    issueBtn.addEventListener('click', () => void streamExport(rec, 'issue-pack', trimArgs));
 
-    const revealBtn = el('button', 'pill', tr('review.reveal'));
-    revealBtn.dataset.testid = 'recorder.review.reveal';
-    revealBtn.addEventListener('click', () => void captureV2.open(rec.id, 'reveal').catch(() => showToast('error', tr('review.exportFailed'))));
+    const revealBtn = iconBtn('pill', 'folder', tr('review.reveal'), 'recorder.review.reveal', () => void captureV2.open(rec.id, 'reveal').catch(() => showToast('error', tr('review.exportFailed'))));
 
     exportBar.append(saveMp4, saveGif, copyBtn, driveBtn, issueBtn, revealBtn);
     main.append(stage, badges, trimBar, exportBar);

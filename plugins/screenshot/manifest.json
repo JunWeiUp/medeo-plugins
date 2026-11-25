@@ -3,6 +3,7 @@
   "name": "Screenshot & Recorder",
   "description": "Capture screenshots and 120Hz multi-track screen recordings with system audio, microphone, camera, click highlights, keystrokes, annotations, pin-to-screen, OCR and Issue packaging.",
   "icon": "icon.svg",
+  "ui": "ui/hub.html",
   "version": "2.0.0",
   "api_version": 1,
   "runtime": "node",
