@@ -21,7 +21,7 @@ import {
   type PinPayload, type ReviewState, type SettingsState, type Shot, type ToWindow,
 } from './src/protocol.ts';
 import {
-  buildIssueSummary, computeBorderBounds, computeHudBounds,
+  buildIssueSummary, computeBorderBounds, computeHudBounds, computeHudSize,
   formatDuration, normalizeRecordingConfig, type RecordingConfig,
 } from './src/recording.ts';
 import { DEFAULTS, normalize, type Settings, type ShortcutKey } from './src/settings.ts';
@@ -368,6 +368,11 @@ async function attachActiveRecording(id: string, localRect: Rect, rawConfig: Rec
     pollTimer: null,
   };
 
+  // Destroy the screen-saver overlay panel so no hidden focusable panel lingers during recording
+  // or interferes with macOS IME shortcuts / input focus.
+  overlayReady = false;
+  await windowsV2.close(OVERLAY).catch(() => {});
+
   // Click-through, capture-excluded border around the recorded region.
   await windowsV2.open({
     id: BORDER,
@@ -386,7 +391,7 @@ async function attachActiveRecording(id: string, localRect: Rect, rawConfig: Rec
     bounds: borderBounds,
   }).catch(err => console.warn('border window open failed:', String(err)));
 
-  const hudBounds = computeHudBounds(globalRegion, displayBounds);
+  const hudBounds = computeHudBounds(globalRegion, displayBounds, computeHudSize(cfg, issueMode));
   await windowsV2.open({
     id: HUD,
     entry: 'ui/hud.html',

@@ -46,7 +46,7 @@ export const DEFAULT_RECORDING_CONFIG: RecordingConfig = {
   microphone: { enabled: false, deviceId: null, mono: true },
   camera: { enabled: false, deviceId: null, shape: 'circle', position: 'bl', mirror: true },
   clicks: { enabled: true, color: '#FF3B30', size: 'md', sound: false },
-  keystrokes: { enabled: false, shortcutsOnly: false, position: 'bottom-center' },
+  keystrokes: { enabled: true, shortcutsOnly: false, position: 'bottom-center' },
 };
 
 export const ISSUE_RECORDING_PRESET: Partial<RecordingConfig> = {
@@ -165,11 +165,26 @@ export function detectFpsHealth(
   return 'ok';
 }
 
+/** Estimates the minimum non-clipping HUD window size for the active tracks. */
+export function computeHudSize(
+  cfg: Pick<RecordingConfig, 'microphone' | 'systemAudio' | 'camera'>,
+  issueMode = false,
+): { width: number; height: number } {
+  // Base: outer shadow padding + rec dot + timer + fps pill + codec pill + pause/stop/cancel + dividers.
+  let width = 416;
+  if (issueMode) width += 58;
+  if (cfg.microphone.enabled) width += 68;
+  if (cfg.systemAudio.enabled) width += 38;
+  if (cfg.camera.enabled) width += 62;
+  if (cfg.microphone.enabled || cfg.systemAudio.enabled || cfg.camera.enabled) width += 16;
+  return { width, height: 56 };
+}
+
 /** Places the non-activating Recording HUD pill below the capture rect, then above, then bottom-center of display. */
 export function computeHudBounds(
   region: WindowBounds,
   display: WindowBounds,
-  hudSize: { width: number; height: number } = { width: 472, height: 48 },
+  hudSize: { width: number; height: number } = { width: 580, height: 56 },
 ): WindowBounds {
   const margin = 12;
   const x = Math.round(

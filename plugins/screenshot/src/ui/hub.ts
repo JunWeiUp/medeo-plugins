@@ -278,6 +278,17 @@ function render() {
     mkToggle('screenshot.hub.toggle.keys', 'keyboard', 'keyboard', tr('rec.keys'), rec.keystrokes.enabled, () =>
       patchRecording({ keystrokes: { ...rec.keystrokes, enabled: !rec.keystrokes.enabled } })),
   );
+  if (rec.keystrokes.enabled) {
+    const keyModeSeg = el('div', 'hub-seg hub-key-mode');
+    keyModeSeg.dataset.testid = 'screenshot.hub.keyMode';
+    for (const [isShort, lbl] of [[false, tr('rec.keys.allKeys')], [true, tr('rec.keys.shortcutsOnly')]] as const) {
+      const b = el('button', `hub-seg-item${rec.keystrokes.shortcutsOnly === isShort ? ' on' : ''}`, lbl);
+      b.addEventListener('click', () =>
+        patchRecording({ keystrokes: { ...rec.keystrokes, enabled: true, shortcutsOnly: isShort } }));
+      keyModeSeg.append(b);
+    }
+    chips.append(keyModeSeg);
+  }
   preflight.append(preHead, chips);
   root.append(preflight);
 

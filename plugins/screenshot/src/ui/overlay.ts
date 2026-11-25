@@ -1052,9 +1052,9 @@ function openPopover(kind: Exclude<typeof popover, null>) {
     cb.addEventListener('change', () => updateRecConfig({ keystrokes: { ...key, enabled: cb.checked } }));
     row.append(cb, el('span', '', tr('rec.keys.enable')));
 
-    const modeSeg = segmented<'shortcuts' | 'all'>('recorder.keys.mode', key.shortcutsOnly ? 'shortcuts' : 'all', [
-      { v: 'shortcuts', label: tr('rec.keys.shortcutsOnly') },
+    const modeSeg = segmented<'all' | 'shortcuts'>('recorder.keys.mode', key.shortcutsOnly ? 'shortcuts' : 'all', [
       { v: 'all', label: tr('rec.keys.allKeys') },
+      { v: 'shortcuts', label: tr('rec.keys.shortcutsOnly') },
     ], v => updateRecConfig({ keystrokes: { ...key, enabled: true, shortcutsOnly: v === 'shortcuts' } }));
 
     const posSeg = segmented<KeystrokePosition>('recorder.keys.pos', key.position, [
@@ -1279,7 +1279,7 @@ function onKey(e: KeyboardEvent) {
     return;
   }
   if (e.target instanceof HTMLInputElement) return;
-  if (e.key === ' ') { space = true; e.preventDefault(); return; }
+  if (e.key === ' ' && !mod && !e.altKey) { space = true; e.preventDefault(); return; }
   if (e.key === 'Escape') {
     e.preventDefault();
     if (countdownAbort) { countdownAbort(); return; }

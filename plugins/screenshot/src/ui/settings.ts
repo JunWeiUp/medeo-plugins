@@ -171,6 +171,16 @@ function render() {
     row(tr('rec.keys.enable'), tr('rec.keys.privacyNote'), check('screenshot.settings.recKeys', rec.keystrokes.enabled, v => ({
       recording: { ...rec, keystrokes: { ...rec.keystrokes, enabled: v } },
     }))),
+    row(
+      tr('rec.keys.title'),
+      null,
+      choice<'all' | 'shortcuts'>('screenshot.settings.recKeysMode', rec.keystrokes.shortcutsOnly ? 'shortcuts' : 'all', [
+        ['all', tr('rec.keys.allKeys')],
+        ['shortcuts', tr('rec.keys.shortcutsOnly')],
+      ], v => ({
+        recording: { ...rec, keystrokes: { ...rec.keystrokes, enabled: true, shortcutsOnly: v === 'shortcuts' } },
+      })),
+    ),
   );
   root.append(recCard);
 

@@ -146,32 +146,34 @@ body.settings-page { font: 13px/1.5 var(--font); background: var(--medeo-bg, Can
 .foot-btns { display: flex; gap: 8px; }
 
 /* Recording HUD pill */
-body.hud-page { margin: 0; padding: 4px; background: transparent; overflow: hidden; user-select: none; -webkit-app-region: drag; }
-.rec-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; padding: 0 12px; border-radius: 20px; background: rgba(24,24,27,.94); border: 1px solid rgba(255,255,255,.14); color: #fff; font-family: var(--font); font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+body.hud-page { margin: 0; padding: 6px 8px; background: transparent; overflow: hidden; user-select: none; -webkit-app-region: drag; display: flex; align-items: center; justify-content: center; height: 100vh; }
+.rec-hud { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; height: 42px; padding: 0 12px; border-radius: 21px; background: rgba(24,24,27,.95); border: 1px solid rgba(255,255,255,.15); color: #fff; font-family: var(--font); font-size: 12.5px; box-shadow: 0 6px 18px rgba(0,0,0,.44); white-space: nowrap; flex: none; max-width: 100%; }
 .rec-hud button { -webkit-app-region: no-drag; }
-.hud-status, .hud-meters, .hud-controls { display: flex; align-items: center; gap: 6px; }
+.hud-status, .hud-meters, .hud-controls { display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap; }
+.hud-sep { width: 1px; height: 18px; background: rgba(255,255,255,.14); flex: none; }
 .hud-dot { width: 9px; height: 9px; border-radius: 50%; background: #FF3B30; box-shadow: 0 0 8px rgba(255,59,48,.85); flex: none; }
 .hud-dot.paused { background: #FF9F0A; box-shadow: 0 0 8px rgba(255,159,10,.7); }
-.hud-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
-.hud-pill { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.88); }
-.hud-cam-pill { display: inline-flex; align-items: center; gap: 4px; }
+.hud-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 42px; white-space: nowrap; flex: none; }
+.hud-pill { display: inline-flex; align-items: center; height: 22px; font-size: 11px; font-weight: 600; padding: 0 7px; border-radius: 6px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.88); white-space: nowrap; flex: none; line-height: 1; }
+.hud-cam-pill { gap: 4px; }
 .hud-pill.fps.ok { background: rgba(52,199,89,.2); color: #6ee78f; }
 .hud-pill.fps.warn { background: rgba(255,159,10,.24); color: #ffd166; }
 .hud-pill.fps.drop { background: rgba(255,59,48,.28); color: #ff8078; }
 .hud-pill.issue { background: rgba(175,82,222,.3); color: #e2b8ff; }
 .hud-pill.ok { background: rgba(52,199,89,.22); color: #6ee78f; }
 .hud-pill.warn { background: rgba(255,159,10,.25); color: #ffd166; }
-.hud-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 26px; border: 0; border-radius: 7px; padding: 0 8px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer; font-size: 12px; }
+.hud-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 28px; border: 0; border-radius: 8px; padding: 0 8px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer; font-size: 12px; white-space: nowrap; flex: none; }
 .hud-icon-btn:hover { background: rgba(255,255,255,.18); }
 .hud-icon-btn.muted { opacity: .72; background: rgba(255,59,48,.22); color: #ff9a94; }
-.hud-vu { display: inline-block; width: 22px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
+.hud-vu { display: inline-block; width: 22px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; flex: none; }
 .hud-vu-fill { display: block; height: 100%; background: #34C759; transition: width .12s linear; }
-.hud-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 26px; border: 0; border-radius: 7px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.hud-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; flex: none; }
 .hud-btn:hover { background: rgba(255,255,255,.22); }
-.hud-btn.ghost { background: transparent; opacity: .72; }
+.hud-btn.ghost { background: transparent; opacity: .74; }
 .hud-btn.ghost:hover { opacity: 1; background: rgba(255,255,255,.12); }
-.hud-stop { display: inline-flex; align-items: center; gap: 5px; height: 26px; border: 0; border-radius: 8px; padding: 0 10px; background: #FF3B30; color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; }
+.hud-stop { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 28px; min-width: 62px; border: 0; border-radius: 14px; padding: 0 12px; background: #FF3B30; color: #fff; font-weight: 600; font-size: 12px; line-height: 1; cursor: pointer; white-space: nowrap; flex: none; box-shadow: 0 1px 4px rgba(255,59,48,.35); }
 .hud-stop:hover { background: #ff5147; }
+.hud-stop-label { white-space: nowrap; line-height: 1; }
 
 /* Click-through recording border */
 body.border-page { margin: 0; background: transparent; overflow: hidden; }
@@ -357,7 +359,9 @@ body.hub-page {
 .hub-seg-item:hover { color: var(--hub-text); }
 .hub-seg-item.on { background: var(--hub-shot); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 
-.hub-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.hub-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hub-key-mode { height: 34px; align-items: center; padding: 3px; border: 1px solid var(--hub-border); }
+.hub-key-mode .hub-seg-item { height: 26px; padding: 0 10px; }
 .hub-chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--hub-border); background: var(--hub-subtle); color: var(--hub-muted); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
 .hub-chip.compact { height: 28px; padding: 0 10px; font-size: 12px; }
 .hub-chip:hover { background: var(--hub-subtle-hover); color: var(--hub-text); }

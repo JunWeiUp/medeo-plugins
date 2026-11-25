@@ -122,6 +122,8 @@ test('chunks reassemble', () => {
 
 test('120Hz recording config normalization and auto HEVC selection', () => {
   assert.deepEqual(normalizeRecordingConfig(null), DEFAULT_RECORDING_CONFIG);
+  assert.equal(DEFAULT_RECORDING_CONFIG.keystrokes.enabled, true);
+  assert.equal(DEFAULT_RECORDING_CONFIG.keystrokes.shortcutsOnly, false);
   const cfg = normalizeRecordingConfig({
     fps: 120,
     codec: 'auto',

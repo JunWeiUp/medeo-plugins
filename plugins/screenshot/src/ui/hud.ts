@@ -90,7 +90,9 @@ function render() {
 
   const stopBtn = el('button', 'hud-stop');
   stopBtn.dataset.testid = 'recorder.hud.stop';
-  stopBtn.append(svgIcon('stop', 11), el('span', '', tr('hud.stop')));
+  stopBtn.title = tr('hud.stop');
+  stopBtn.setAttribute('aria-label', tr('hud.stop'));
+  stopBtn.append(svgIcon('stop', 11), el('span', 'hud-stop-label', tr('hud.stop')));
   stopBtn.addEventListener('click', () => void post({ type: 'hud-stop' }));
 
   const cancelBtn = el('button', 'hud-btn ghost');
@@ -101,7 +103,11 @@ function render() {
   cancelBtn.addEventListener('click', () => void post({ type: 'hud-cancel' }));
 
   controls.append(pauseBtn, stopBtn, cancelBtn);
-  root.append(statusWrap, meters, controls);
+  if (meters.childElementCount > 0) {
+    root.append(statusWrap, el('span', 'hud-sep'), meters, el('span', 'hud-sep'), controls);
+  } else {
+    root.append(statusWrap, el('span', 'hud-sep'), controls);
+  }
 }
 
 export async function startHud() {
