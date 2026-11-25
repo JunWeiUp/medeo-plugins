@@ -176,7 +176,18 @@ async function shoot(mode: Mode, delay = 0) {
   results = null;
   const open = await windowsV2.list().catch(() => []);
   if (!open.some(w => w.id === OVERLAY)) overlayReady = false;
-  await windowsV2.open({ id: OVERLAY, entry: 'ui/index.html', title: await label('plugin.name'), width: d.width, height: d.height, overlay: true });
+  await windowsV2.open({
+    id: OVERLAY,
+    entry: 'ui/index.html',
+    title: await label('plugin.name'),
+    width: d.width,
+    height: d.height,
+    overlay: true,
+    hide_on_blur: false,
+    ...(d.displayId ? { display_id: String(d.displayId) } : {}),
+    bounds: { x: d.x, y: d.y, width: d.width, height: d.height },
+  });
+  await windowsV2.focus(OVERLAY).catch(() => {});
   if (overlayReady) await send(shot, chunks); else pending = { shot, chunks };
   console.info(`capture #${shot.seq} ${mode}: ${d.width}x${d.height}@${d.scale} ${d.refreshRate}Hz ${Math.round(png.length / 1024)} KiB, in ${t1 - t0 - delay} ms`);
 }
@@ -729,7 +740,10 @@ function onMessage(m: FromWindow) {
     case 'overlay-ready':
       console.info('overlay ready');
       overlayReady = true;
-      if (pending) { const p = pending; pending = null; void send(p.shot, p.chunks); }
+      if (pending) {
+        const p = pending; pending = null;
+        void send(p.shot, p.chunks).then(() => windowsV2.focus(OVERLAY).catch(() => {}));
+      }
       break;
     case 'result': {
       if (!current || m.seq !== current.seq) return;

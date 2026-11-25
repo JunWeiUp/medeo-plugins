@@ -18,7 +18,7 @@ export interface ExtendedWindowOpenOptions {
   height: number;
   panel?: boolean;
   overlay?: boolean;
-  display_id?: number;
+  display_id?: string;
   bounds?: WindowBounds;
   click_through?: boolean;
   hide_on_blur?: boolean;
