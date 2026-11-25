@@ -413,7 +413,7 @@ function render() {
 
     const revealBtn = el('button', 'pill', tr('review.reveal'));
     revealBtn.dataset.testid = 'recorder.review.reveal';
-    revealBtn.addEventListener('click', () => void post({ type: 'review-reveal', id: rec.id }));
+    revealBtn.addEventListener('click', () => void captureV2.open(rec.id, 'reveal').catch(() => showToast('error', tr('review.exportFailed'))));
 
     exportBar.append(saveMp4, saveGif, copyBtn, driveBtn, issueBtn, revealBtn);
     main.append(stage, badges, trimBar, exportBar);

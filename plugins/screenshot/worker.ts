@@ -21,12 +21,12 @@ import {
   type PinPayload, type ReviewState, type SettingsState, type Shot, type ToWindow,
 } from './src/protocol.ts';
 import {
-  buildIssueSummary, buildStartPayload, computeBorderBounds, computeHudBounds,
+  buildIssueSummary, computeBorderBounds, computeHudBounds,
   formatDuration, normalizeRecordingConfig, type RecordingConfig,
 } from './src/recording.ts';
 import { DEFAULTS, normalize, type Settings, type ShortcutKey } from './src/settings.ts';
 
-const OVERLAY = 'overlay', SETTINGS = 'settings', HUD = 'rec-hud', BORDER = 'rec-border', COUNTDOWN = 'rec-countdown', REVIEW = 'rec-review';
+const OVERLAY = 'overlay', SETTINGS = 'settings', HUD = 'rec-hud', BORDER = 'rec-border', REVIEW = 'rec-review';
 const OSASCRIPT = '/usr/bin/osascript', SCREENCAPTURE = '/usr/sbin/screencapture', OPEN = '/usr/bin/open';
 const PRIVACY_URL: Record<'screen' | 'mic' | 'camera' | 'input', string> = {
   screen: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
@@ -68,8 +68,6 @@ interface ActiveRecording {
   pollTimer: ReturnType<typeof setInterval> | null;
 }
 let activeRec: ActiveRecording | null = null;
-let countdownCancel: (() => void) | null = null;
-let latestCountdown: { secondsLeft: number; fps: number } | null = null;
 let reviewRecordId: string | null = null;
 let reviewIssueMode = false;
 let reviewBusy: string | null = null;
@@ -305,66 +303,7 @@ async function copyText(text: string) {
 }
 
 // ---------------------------------------------------------------- 120Hz Screen Recording lifecycle
-async function runCountdown(seconds: number, fps: number, display: WindowBounds): Promise<boolean> {
-  if (seconds <= 0) return true;
-  let cancelled = false;
-  const bounds: WindowBounds = {
-    x: Math.round(display.x + display.width / 2 - 110),
-    y: Math.round(display.y + display.height / 2 - 110),
-    width: 220,
-    height: 220,
-  };
-  latestCountdown = { secondsLeft: seconds, fps };
-  await windowsV2.open({
-    id: COUNTDOWN,
-    entry: 'ui/countdown.html',
-    title: await label('rec.countdown.title'),
-    width: bounds.width,
-    height: bounds.height,
-    panel: true,
-    transparent: true,
-    hide_on_blur: false,
-    exclude_from_capture: true,
-    focusable: true,
-    bounds,
-  }).catch(() => {});
-
-  const ok = await new Promise<boolean>(resolve => {
-    let remaining = seconds;
-    const finish = (v: boolean) => {
-      clearInterval(timer);
-      countdownCancel = null;
-      latestCountdown = null;
-      resolve(v);
-    };
-    countdownCancel = () => { cancelled = true; finish(false); };
-    void post({ type: 'countdown-state', state: { secondsLeft: remaining, fps } });
-    const timer = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) { finish(true); return; }
-      latestCountdown = { secondsLeft: remaining, fps };
-      void post({ type: 'countdown-state', state: { secondsLeft: remaining, fps } });
-    }, 1000);
-  });
-  await windowsV2.close(COUNTDOWN).catch(() => {});
-  return ok && !cancelled;
-}
-
-async function resolveDisplaySourceId(displayId: number): Promise<string | null> {
-  let src = await captureV2.sources(true, false);
-  for (let i = 0; i < 30 && src.status === 'loading'; i++) {
-    await new Promise(r => setTimeout(r, 150));
-    src = await captureV2.sources(false, false);
-  }
-  if (src.status !== 'ready' || !src.sources.length) return null;
-  const exact = src.sources.find(s => s.display_id && s.display_id === displayId);
-  if (exact) return exact.id;
-  // Fallback to first display source (or first source)
-  const firstDisplay = src.sources.find(s => s.display_id !== undefined);
-  return (firstDisplay ?? src.sources[0]).id;
-}
-
-async function startRecording(localRect: Rect, rawConfig: RecordingConfig, issueMode: boolean) {
+async function attachActiveRecording(id: string, localRect: Rect, rawConfig: RecordingConfig, issueMode: boolean) {
   if (activeRec) return;
   const displayInfo = current?.display ?? { x: 0, y: 0, width: 1440, height: 900, scale: 2, displayId: 0, refreshRate: 60 };
   current = null;
@@ -384,15 +323,51 @@ async function startRecording(localRect: Rect, rawConfig: RecordingConfig, issue
     height: Math.max(16, Math.round(localRect.h)),
   };
 
-  // Show click-through, capture-excluded border frame around selection during countdown & recording.
   const borderBounds = computeBorderBounds(globalRegion, displayBounds, 4);
-  const initialBorder: BorderState = {
-    status: cfg.countdown > 0 ? 'countdown' : 'recording',
-    label: cfg.countdown > 0 ? await label('rec.countdown.title') : 'REC',
+  const hudState: HudState = {
+    id,
+    status: 'starting',
+    paused: false,
+    durationMs: 0,
+    bytes: 0,
+    targetFps: cfg.fps,
+    droppedFrames: 0,
+    micLevel: 0,
+    sysLevel: 0,
+    micEnabled: cfg.microphone.enabled,
+    sysEnabled: cfg.systemAudio.enabled,
+    micMuted: false,
+    sysMuted: false,
+    cameraEnabled: cfg.camera.enabled,
+    cameraFallback: false,
+    clicksEnabled: cfg.clicks.enabled,
+    keystrokesEnabled: cfg.keystrokes.enabled,
+    telemetryEvents: 0,
+    issueMode,
+  };
+  const borderState: BorderState = {
+    status: 'recording',
+    label: issueMode ? 'ISSUE REC' : 'REC',
     fps: cfg.fps,
     width: globalRegion.width,
     height: globalRegion.height,
   };
+
+  activeRec = {
+    id,
+    config: cfg,
+    issueMode,
+    region: globalRegion,
+    display: displayBounds,
+    micMuted: false,
+    sysMuted: false,
+    paused: false,
+    hudState,
+    borderState,
+    pollTimer: null,
+  };
+
+  // Click-through, capture-excluded border around the recorded region.
   await windowsV2.open({
     id: BORDER,
     entry: 'ui/border.html',
@@ -409,103 +384,31 @@ async function startRecording(localRect: Rect, rawConfig: RecordingConfig, issue
     resizable: false,
     bounds: borderBounds,
   }).catch(err => console.warn('border window open failed:', String(err)));
-  await post({ type: 'border-state', state: initialBorder });
 
-  if (cfg.countdown > 0) {
-    const proceed = await runCountdown(cfg.countdown, cfg.fps, displayBounds);
-    if (!proceed) {
-      await windowsV2.close(BORDER).catch(() => {});
-      return;
-    }
-  }
+  const hudBounds = computeHudBounds(globalRegion, displayBounds);
+  await windowsV2.open({
+    id: HUD,
+    entry: 'ui/hud.html',
+    title: 'Recording HUD',
+    width: hudBounds.width,
+    height: hudBounds.height,
+    panel: true,
+    transparent: true,
+    focusable: false,
+    hide_on_blur: false,
+    exclude_from_capture: true,
+    movable: true,
+    resizable: false,
+    bounds: hudBounds,
+  }).catch(err => console.warn('hud window open failed:', String(err)));
 
-  try {
-    const sourceId = await resolveDisplaySourceId(displayInfo.displayId);
-    if (!sourceId) {
-      await windowsV2.close(BORDER).catch(() => {});
-      await notify('rec.error.noSource');
-      return;
-    }
-    const startArgs = buildStartPayload(sourceId, localRect, displayInfo, cfg);
-    const res = await captureV2.start(startArgs);
-    if (!res?.id || res.cancelled) {
-      await windowsV2.close(BORDER).catch(() => {});
-      return;
-    }
+  await post({ type: 'border-state', state: borderState });
+  await post({ type: 'hud-state', state: hudState });
+  await showTray().catch(() => {});
 
-    const hudState: HudState = {
-      id: res.id,
-      status: 'starting',
-      paused: false,
-      durationMs: 0,
-      bytes: 0,
-      targetFps: cfg.fps,
-      droppedFrames: 0,
-      micLevel: 0,
-      sysLevel: 0,
-      micEnabled: cfg.microphone.enabled,
-      sysEnabled: cfg.systemAudio.enabled,
-      micMuted: false,
-      sysMuted: false,
-      cameraEnabled: cfg.camera.enabled,
-      cameraFallback: false,
-      clicksEnabled: cfg.clicks.enabled,
-      keystrokesEnabled: cfg.keystrokes.enabled,
-      telemetryEvents: 0,
-      issueMode,
-    };
-    const borderState: BorderState = {
-      status: 'recording',
-      label: issueMode ? 'ISSUE REC' : 'REC',
-      fps: cfg.fps,
-      width: globalRegion.width,
-      height: globalRegion.height,
-    };
-
-    activeRec = {
-      id: res.id,
-      config: cfg,
-      issueMode,
-      region: globalRegion,
-      display: displayBounds,
-      micMuted: false,
-      sysMuted: false,
-      paused: false,
-      hudState,
-      borderState,
-      pollTimer: null,
-    };
-
-    const hudBounds = computeHudBounds(globalRegion, displayBounds);
-    await windowsV2.open({
-      id: HUD,
-      entry: 'ui/hud.html',
-      title: 'Recording HUD',
-      width: hudBounds.width,
-      height: hudBounds.height,
-      panel: true,
-      transparent: true,
-      focusable: false,
-      hide_on_blur: false,
-      exclude_from_capture: true,
-      movable: true,
-      resizable: false,
-      bounds: hudBounds,
-    }).catch(err => console.warn('hud window open failed:', String(err)));
-
-    await post({ type: 'border-state', state: borderState });
-    await post({ type: 'hud-state', state: hudState });
-    await showTray().catch(() => {});
-
-    activeRec.pollTimer = setInterval(() => {
-      void pollActiveRecording();
-    }, 300);
-  } catch (error) {
-    console.error('capture.start failed:', error);
-    await windowsV2.close(BORDER).catch(() => {});
-    await windowsV2.close(HUD).catch(() => {});
-    await notify('rec.error.start', { error: String(error) });
-  }
+  activeRec.pollTimer = setInterval(() => {
+    void pollActiveRecording();
+  }, 300);
 }
 
 async function pollActiveRecording() {
@@ -828,7 +731,8 @@ function onMessage(m: FromWindow) {
     case 'refresh-devices': void fetchDevices(true); break;
     case 'update-recording-config': void serial(() => setSettings({ recording: normalizeRecordingConfig(m.config) })); break;
     case 'open-privacy-pane': void run(OPEN, [PRIVACY_URL[m.pane] ?? PRIVACY_URL.screen]).catch(() => {}); break;
-    case 'start-recording': void serial(() => startRecording(m.rect, m.config, m.issueMode)); break;
+    case 'recording-started': void serial(() => attachActiveRecording(m.id, m.rect, m.config, m.issueMode)); break;
+    case 'recording-error': void notify('rec.error.start', { error: m.error }); break;
 
     // HUD controls
     case 'hud-ready':
@@ -859,15 +763,9 @@ function onMessage(m: FromWindow) {
       }
       break;
 
-    // Border & Countdown
+    // Border
     case 'border-ready':
       if (activeRec) void post({ type: 'border-state', state: activeRec.borderState });
-      break;
-    case 'countdown-ready':
-      if (latestCountdown) void post({ type: 'countdown-state', state: latestCountdown });
-      break;
-    case 'countdown-cancel':
-      countdownCancel?.();
       break;
 
     // Pin window
@@ -1024,6 +922,5 @@ export const { activate, deactivate } = definePlugin({
   },
   deactivate() {
     if (activeRec?.pollTimer) clearInterval(activeRec.pollTimer);
-    countdownCancel?.();
   },
 });

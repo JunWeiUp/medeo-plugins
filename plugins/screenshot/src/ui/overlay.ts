@@ -5,9 +5,9 @@
 import { appWindows, capabilities, channel, i18n, plugins } from '@one2x/medeo-plugin-sdk';
 import { CURSORS, HANDLES, clamp, contains, fromPoints, handlePoint, hitHandle, move, resize, round, windowAt, type Handle, type Point, type Rect } from '../geometry.ts';
 import { split, type Action, type FromOverlay, type Mode, type OcrResult, type Shot, type ToOverlay } from '../protocol.ts';
-import type { CaptureDevicesResult } from '../platform.ts';
+import { captureV2, type CaptureDevicesResult } from '../platform.ts';
 import {
-  DEFAULT_RECORDING_CONFIG, ISSUE_RECORDING_PRESET, effectiveCodec, normalizeRecordingConfig,
+  DEFAULT_RECORDING_CONFIG, ISSUE_RECORDING_PRESET, buildStartPayload, effectiveCodec, normalizeRecordingConfig,
   type CameraCorner, type CameraShape, type ClickSize, type CountdownSeconds, type KeystrokePosition, type RecordingConfig, type RecordingFps,
 } from '../recording.ts';
 import {
@@ -690,17 +690,110 @@ function updateRecConfig(patch: Partial<RecordingConfig>) {
   if (popover && popover.startsWith('rec-')) openPopover(popover);
 }
 
-function startRecordingNow() {
+let countdownAbort: (() => void) | null = null;
+
+async function runInlineCountdown(seconds: number, rect: Rect, fps: number): Promise<boolean> {
+  if (seconds <= 0) return true;
+  const ring = el('div', 'inline-countdown');
+  ring.dataset.testid = 'recorder.countdown';
+  const numEl = el('div', 'rec-countdown-num', String(seconds));
+  const metaEl = el('div', 'rec-countdown-meta', `${fps}Hz`);
+  const cancelBtn = el('button', 'rec-countdown-cancel', tr('rec.countdown.cancel'));
+  ring.append(numEl, metaEl, cancelBtn);
+  ring.style.left = `${Math.round(rect.x + rect.w / 2)}px`;
+  ring.style.top = `${Math.round(rect.y + rect.h / 2)}px`;
+  document.body.append(ring);
+
+  return await new Promise<boolean>(resolve => {
+    let left = seconds;
+    const done = (ok: boolean) => {
+      clearInterval(timer);
+      countdownAbort = null;
+      ring.remove();
+      resolve(ok);
+    };
+    countdownAbort = () => done(false);
+    cancelBtn.addEventListener('click', e => { e.stopPropagation(); done(false); });
+    const timer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) { done(true); return; }
+      numEl.textContent = String(left);
+    }, 1000);
+  });
+}
+
+async function resolveDisplaySourceId(displayId?: number): Promise<string | null> {
+  let src = await captureV2.sources(true, false);
+  for (let i = 0; i < 30 && src.status === 'loading'; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    src = await captureV2.sources(false, false);
+  }
+  if (src.status !== 'ready' || !src.sources.length) return null;
+  if (displayId) {
+    const exact = src.sources.find(s => s.display_id === displayId);
+    if (exact) return exact.id;
+  }
+  const firstDisplay = src.sources.find(s => s.display_id !== undefined);
+  return (firstDisplay ?? src.sources[0]).id;
+}
+
+async function startRecordingNow() {
   if (!shot || !sel || busy) return;
   busy = true;
-  const seqNo = shot.seq;
+  closePopover();
   const rect = { ...sel };
   const cfg = normalizeRecordingConfig(recConfig);
   const issueMode = shot.mode === 'record-issue';
-  reset();
-  void appWindows.hide('overlay').catch(() => {});
-  void post({ type: 'start-recording', seq: seqNo, rect, config: cfg, issueMode });
-  busy = false;
+  const displayInfo = {
+    x: shot.displayOrigin?.x ?? 0,
+    y: shot.displayOrigin?.y ?? 0,
+    width: shot.width,
+    height: shot.height,
+  };
+  const displayId = shot.displayId;
+  try {
+    // Resolve source and obtain Host confirmation from this UI window (`capture.sources` and `capture.start` require UI).
+    const sourceId = await resolveDisplaySourceId(displayId);
+    if (!sourceId) {
+      toast(tr('rec.error.noSource'));
+      busy = false;
+      return;
+    }
+    if (cfg.countdown > 0) {
+      $('modebar').hidden = true;
+      $('recbar').hidden = true;
+      $('hint').hidden = true;
+      const ok = await runInlineCountdown(cfg.countdown, rect, cfg.fps);
+      if (!ok) {
+        renderModeBar();
+        renderRecordBar();
+        showHint();
+        busy = false;
+        return;
+      }
+    }
+    const payload = buildStartPayload(sourceId, rect, displayInfo, cfg);
+    const res = await captureV2.start(payload);
+    if (!res?.id || res.cancelled) {
+      renderModeBar();
+      renderRecordBar();
+      showHint();
+      busy = false;
+      return;
+    }
+    reset();
+    await appWindows.hide('overlay').catch(() => {});
+    await post({ type: 'recording-started', id: res.id, rect, config: cfg, issueMode });
+  } catch (error) {
+    console.error('capture.start failed:', error);
+    renderModeBar();
+    renderRecordBar();
+    showHint();
+    toast(tr('rec.error.start', { error: String(error) }));
+    void post({ type: 'recording-error', error: String(error) });
+  } finally {
+    busy = false;
+  }
 }
 
 function renderRecordBar() {
@@ -760,7 +853,7 @@ function renderRecordBar() {
 
   const startBtn = el('button', 'rec-start-btn', `● ${tr('rec.start')}`);
   startBtn.dataset.testid = 'recorder.bar.start';
-  startBtn.addEventListener('click', e => { e.stopPropagation(); startRecordingNow(); });
+  startBtn.addEventListener('click', e => { e.stopPropagation(); void startRecordingNow(); });
 
   const cancelBtn = btn('close', tr('action.cancel'), 'recorder.bar.cancel', cancel, 'tb small');
 
@@ -1190,6 +1283,7 @@ function onKey(e: KeyboardEvent) {
   if (e.key === ' ') { space = true; e.preventDefault(); return; }
   if (e.key === 'Escape') {
     e.preventDefault();
+    if (countdownAbort) { countdownAbort(); return; }
     if (popover) closePopover(); else if (ocr && shot?.mode !== 'ocr') { ocr = null; renderOcr(); } else if (selected !== null) { selected = null; showOptions(); dirty(); } else cancel();
     return;
   }
@@ -1200,7 +1294,7 @@ function onKey(e: KeyboardEvent) {
   }
   if (e.key === 'Enter') {
     e.preventDefault();
-    if (isRecordMode()) startRecordingNow();
+    if (isRecordMode()) void startRecordingNow();
     else void finish(shot?.output.enter ?? 'copy');
     return;
   }

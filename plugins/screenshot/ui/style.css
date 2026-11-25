@@ -176,6 +176,7 @@ body.border-page { margin: 0; background: transparent; overflow: hidden; }
 .rec-border[data-status="countdown"] .rec-border-tag { background: rgba(0,122,255,.9); }
 
 /* Countdown overlay */
+.inline-countdown { position: fixed; transform: translate(-50%, -50%); width: 196px; height: 196px; border-radius: 50%; background: rgba(20,20,24,.9); border: 2px solid rgba(255,59,48,.88); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.55); z-index: 60; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
 body.countdown-page { margin: 0; background: transparent; overflow: hidden; display: grid; place-items: center; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
 .rec-countdown { width: 196px; height: 196px; border-radius: 50%; background: rgba(20,20,24,.88); border: 2px solid rgba(255,59,48,.85); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.5); }
 .rec-countdown-num { font-size: 68px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }

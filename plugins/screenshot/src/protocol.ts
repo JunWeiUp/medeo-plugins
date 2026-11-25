@@ -99,7 +99,8 @@ export type FromOverlay =
   | { type: 'refresh-devices' }
   | { type: 'update-recording-config'; config: RecordingConfig }
   | { type: 'open-privacy-pane'; pane: 'screen' | 'mic' | 'camera' | 'input' }
-  | { type: 'start-recording'; seq: number; rect: Rect; config: RecordingConfig; issueMode: boolean };
+  | { type: 'recording-started'; id: string; rect: Rect; config: RecordingConfig; issueMode: boolean }
+  | { type: 'recording-error'; error: string };
 
 export type ToHud = { type: 'hud-state'; state: HudState };
 export type FromHud =
