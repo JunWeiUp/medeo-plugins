@@ -42,6 +42,7 @@ let exportModalOpen = false;
 let exportFormat: 'mp4' | 'gif' | 'issue_bundle' = 'mp4';
 let exportCopyFile = false;
 let exportSendDrive = false;
+let exportProgress = 0;
 let lastExportResult: ReviewExportDone | null = null;
 let previewSpeed = 1;
 let rafId = 0;
@@ -874,8 +875,23 @@ function renderPopovers() {
       );
     }
 
+    // Live export progress bar while rendering
+    const busy = Boolean(state.busyAction);
+    if (busy) {
+      const pct = Math.max(2, Math.min(100, Math.round(exportProgress * 100)));
+      const progWrap = el('div', 'st-export-prog');
+      const progHead = el('div', 'st-field-top');
+      progHead.append(el('span', 'st-field-lbl', tr('review.working')), el('span', 'st-field-val', `${pct}%`));
+      const bar = el('div', 'st-prog-bar');
+      const fill = el('div', 'st-prog-fill');
+      fill.style.width = `${pct}%`;
+      bar.append(fill);
+      progWrap.append(progHead, bar);
+      dests.append(progWrap);
+    }
+
     // Result banner if just finished
-    if (lastExportResult) {
+    if (lastExportResult && !busy) {
       const resBox = el('div', `st-export-res ${lastExportResult.ok ? 'ok' : 'err'}`);
       if (lastExportResult.ok) {
         const left = el('div', 'st-export-res-info');
@@ -888,19 +904,19 @@ function renderPopovers() {
         });
         resBox.append(left, reveal);
       } else {
-        resBox.append(el('span', '', tr('review.exportFailed')));
+        resBox.append(el('span', '', `${tr('review.exportFailed')} ${lastExportResult.error ? `(${lastExportResult.error})` : ''}`));
       }
       dests.append(resBox);
     }
 
     // Footer button
-    const busy = Boolean(state.busyAction);
     const foot = el('div', 'st-modal-foot');
     const cancelBtn = el('button', 'st-btn', tr('action.close'));
     cancelBtn.disabled = busy;
     cancelBtn.addEventListener('click', () => { exportModalOpen = false; renderPopovers(); });
-    const goBtn = iconBtn('st-btn primary', 'save', busy ? tr('review.working') : tr('studio.export.run'), 'studio.export.run', () => {
+    const goBtn = iconBtn('st-btn primary', 'save', busy ? `${tr('review.working')} ${Math.round(exportProgress * 100)}%` : tr('studio.export.run'), 'studio.export.run', () => {
       lastExportResult = null;
+      exportProgress = 0;
       const recipe = buildExportRecipe(project!, exportFormat);
       void post({
         type: 'review-studio-export',
@@ -1205,7 +1221,11 @@ export async function startReview() {
       } else {
         renderShell();
       }
+    } else if (m?.type === 'review-export-progress') {
+      exportProgress = m.progress;
+      renderPopovers();
     } else if (m?.type === 'review-export-done') {
+      exportProgress = m.result.ok ? 1 : 0;
       lastExportResult = m.result;
       renderPopovers();
     } else if (m?.type === 'review-toast') {

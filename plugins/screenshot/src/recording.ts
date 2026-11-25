@@ -46,7 +46,7 @@ export const DEFAULT_RECORDING_CONFIG: RecordingConfig = {
   microphone: { enabled: false, deviceId: null, mono: true },
   camera: { enabled: false, deviceId: null, shape: 'circle', position: 'bl', mirror: true },
   clicks: { enabled: true, color: '#FF3B30', size: 'md', sound: false },
-  keystrokes: { enabled: false, shortcutsOnly: true, position: 'bottom-center' },
+  keystrokes: { enabled: false, shortcutsOnly: false, position: 'bottom-center' },
 };
 
 export const ISSUE_RECORDING_PRESET: Partial<RecordingConfig> = {
@@ -59,7 +59,7 @@ export const ISSUE_RECORDING_PRESET: Partial<RecordingConfig> = {
   separateAudio: true,
   systemAudio: { enabled: true, excludeSelf: true },
   clicks: { enabled: true, color: '#FF3B30', size: 'md', sound: false },
-  keystrokes: { enabled: true, shortcutsOnly: true, position: 'bottom-center' },
+  keystrokes: { enabled: true, shortcutsOnly: false, position: 'bottom-center' },
 };
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;

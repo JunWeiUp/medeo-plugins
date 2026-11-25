@@ -533,4 +533,7 @@ body.hub-page {
 .st-export-res-info { display: flex; flex-direction: column; min-width: 0; }
 .st-export-res-info strong { font-size: 12.5px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .st-export-res-info small { font-size: 11px; color: rgba(255,255,255,.65); }
+.st-export-prog { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 9px; background: rgba(10,132,255,.12); border: 1px solid rgba(10,132,255,.3); }
+.st-prog-bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.st-prog-fill { height: 100%; background: linear-gradient(90deg, #0A84FF, #38BDF8); transition: width .18s ease-out; }
 .st-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }

@@ -539,7 +539,7 @@ async function runStudioExport(req: {
       ? (buildIssueSummary(rec, settings.recording) as unknown as Record<string, unknown>)
       : undefined;
 
-    const exported = await captureV2.exportCapture({
+    const started = await captureV2.exportCapture({
       id: req.id,
       format: req.format,
       destination_dir: targetDir,
@@ -547,6 +547,39 @@ async function runStudioExport(req: {
       recipe: req.recipe,
       issue_meta: issueMeta,
     });
+
+    let exported: { path: string; name: string; bytes: number; duration_ms: number; width: number; height: number; codec?: string };
+    if (started.job_id) {
+      await post({ type: 'review-export-progress', progress: started.progress ?? 0 });
+      let finalResult: typeof started.result | undefined;
+      for (;;) {
+        await new Promise(r => setTimeout(r, 250));
+        const poll = await captureV2.exportState(started.job_id);
+        if (typeof poll.progress === 'number') {
+          await post({ type: 'review-export-progress', progress: poll.progress });
+        }
+        if (poll.status === 'completed' && poll.result) {
+          finalResult = poll.result;
+          break;
+        }
+        if (poll.status === 'failed') {
+          throw new Error(poll.error || 'export_failed');
+        }
+      }
+      exported = finalResult!;
+    } else if (started.ok && started.path && started.name) {
+      exported = {
+        path: started.path,
+        name: started.name,
+        bytes: started.bytes ?? 0,
+        duration_ms: started.duration_ms ?? 0,
+        width: started.width ?? 0,
+        height: started.height ?? 0,
+        codec: started.codec,
+      };
+    } else {
+      throw new Error(started.error || 'export_failed');
+    }
 
     if (req.copyFile && req.format !== 'issue_bundle' && exported.path) {
       await helper('copy-file', exported.path).catch(() => {});

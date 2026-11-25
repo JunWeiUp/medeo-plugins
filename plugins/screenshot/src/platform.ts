@@ -152,6 +152,14 @@ export interface StudioExportResult {
   codec?: string;
 }
 
+export interface StudioExportJobState {
+  job_id: string;
+  status: 'exporting' | 'completed' | 'failed';
+  progress?: number;
+  result?: StudioExportResult;
+  error?: string;
+}
+
 const TRACK_FILE: Record<CaptureTrack, string> = {
   screen: 'capture.mp4',
   'capture.mp4': 'capture.mp4',
@@ -215,7 +223,9 @@ export const captureV2 = {
     file_name?: string;
     recipe?: Record<string, unknown>;
     issue_meta?: Record<string, unknown>;
-  }) => capabilities.invoke<StudioExportResult>('capture.export', args as unknown as Record<string, unknown>),
+  }) => capabilities.invoke<StudioExportJobState & Partial<StudioExportResult>>('capture.export', args as unknown as Record<string, unknown>),
+  exportState: (jobId: string) =>
+    capabilities.invoke<StudioExportJobState>('capture.exportState', { job_id: jobId }),
   trackURL: (id: string, track: CaptureTrack = 'screen') =>
     `${location.origin}/_capture/${encodeURIComponent(id)}/${TRACK_FILE[track]}`,
 };

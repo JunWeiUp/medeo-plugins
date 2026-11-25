@@ -149,6 +149,7 @@ export interface ReviewExportDone {
 export type ToReview =
   | { type: 'review-state'; state: ReviewState }
   | { type: 'review-toast'; tone: 'success' | 'error'; message: string }
+  | { type: 'review-export-progress'; progress: number }
   | { type: 'review-export-done'; result: ReviewExportDone };
 export type FromReview =
   | { type: 'review-ready' }
