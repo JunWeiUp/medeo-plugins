@@ -373,7 +373,7 @@
   "studio.seg.text": "Text",
   "studio.seg.color": "Badge Color",
   "studio.seg.pixel": "Mosaic Block",
-  "studio.seg.dragHint": "Tip: drag directly on the video stage to reposition.",
+  "studio.seg.dragHint": "Tip: drag directly on the video stage to reposition, or drag corner/edge handles to resize.",
   "studio.seg.duration": "Freeze Duration",
   "studio.tl.text": "Title",
   "studio.tl.censor": "Blur",

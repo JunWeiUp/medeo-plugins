@@ -76,6 +76,7 @@ let toastTimer = 0;
 
 // Persistent mounted media elements (never destroyed on slider drag / tab switch)
 let screenVideo: HTMLVideoElement | null = null;
+let camWrapEl: HTMLElement | null = null;
 let camVideo: HTMLVideoElement | null = null;
 let micAudio: HTMLAudioElement | null = null;
 let sysAudio: HTMLAudioElement | null = null;
@@ -90,6 +91,7 @@ let zoomFocusDot: HTMLElement | null = null;
 let playBtnEl: HTMLButtonElement | null = null;
 let timecodeEl: HTMLElement | null = null;
 let playheadEl: HTMLElement | null = null;
+let tlTipEl: HTMLElement | null = null;
 let undoBtnEl: HTMLButtonElement | null = null;
 let redoBtnEl: HTMLButtonElement | null = null;
 
@@ -207,13 +209,14 @@ function applyStageStyles() {
     ? '0 22px 54px rgba(0, 0, 0, .58), 0 0 0 1px rgba(255, 255, 255, .12)'
     : 'none';
 
-  if (camVideo) {
+  if (camWrapEl && camVideo) {
     const c = project.camera;
-    camVideo.hidden = !c.enabled;
-    camVideo.className = `st-cam-pip ${c.shape} ${c.position}${c.mirror ? ' mirror' : ''}`;
+    camWrapEl.hidden = !c.enabled;
+    camWrapEl.className = `st-cam-wrap ${c.shape} ${c.position}${activeTab === 'cam' ? ' active' : ''}`;
     const pct = Math.round(c.size * 100);
-    camVideo.style.width = `${pct}%`;
-    camVideo.style.aspectRatio = '1 / 1';
+    camWrapEl.style.width = `${pct}%`;
+    camWrapEl.style.aspectRatio = '1 / 1';
+    camVideo.className = `st-cam-pip ${c.shape}${c.mirror ? ' mirror' : ''}`;
   }
 
   if (keyBadgeEl) {
@@ -222,7 +225,7 @@ function applyStageStyles() {
 
   if (zoomFocusDot) {
     const selZ = (activeTab === 'zoom' || selectedSeg?.kind === 'zoom') ? currentSelectedZoom() : null;
-    if (selZ) {
+    if (selZ && zoomPreviewLocked) {
       zoomFocusDot.hidden = false;
       zoomFocusDot.style.left = `${(selZ.x * 100).toFixed(1)}%`;
       zoomFocusDot.style.top = `${(selZ.y * 100).toFixed(1)}%`;
@@ -233,10 +236,89 @@ function applyStageStyles() {
   renderStageOverlays();
 }
 
+type ResizeDir = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+
 function renderStageOverlays() {
   if (!stageOverlaysEl || !project) return;
   const now = screenVideo?.currentTime ?? 0;
+  const frameH = stageFrameEl?.clientHeight || 420;
   stageOverlaysEl.replaceChildren();
+
+  // Interactive Zoom framing box on Stage when a Zoom segment is selected (and not zoom-locked)
+  const selZ = currentSelectedZoom();
+  if (selZ && !zoomPreviewLocked) {
+    const zBox = el('div', 'st-zoom-box');
+    const applyZoomBoxRect = () => {
+      const bw = 1 / Math.max(1.05, selZ.scale);
+      const bh = 1 / Math.max(1.05, selZ.scale);
+      const bx = Math.max(0, Math.min(1 - bw, selZ.x - bw * 0.5));
+      const by = Math.max(0, Math.min(1 - bh, selZ.y - bh * 0.5));
+      zBox.style.left = `${(bx * 100).toFixed(2)}%`;
+      zBox.style.top = `${(by * 100).toFixed(2)}%`;
+      zBox.style.width = `${(bw * 100).toFixed(2)}%`;
+      zBox.style.height = `${(bh * 100).toFixed(2)}%`;
+    };
+    applyZoomBoxRect();
+    const tag = el('span', 'st-zoom-box-tag', `Zoom ${selZ.scale.toFixed(1)}×`);
+    zBox.append(tag);
+    for (const dir of ['nw', 'ne', 'sw', 'se'] as ResizeDir[]) {
+      const h = el('div', `st-ov-hdl ${dir}`);
+      h.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        if (!stageFrameEl) return;
+        pushUndo();
+        const rect = stageFrameEl.getBoundingClientRect();
+        const startX = e.clientX, startY = e.clientY;
+        const origScale = selZ.scale;
+        const signX = dir.includes('e') ? 1 : -1;
+        const signY = dir.includes('s') ? 1 : -1;
+        const onMove = (ev: PointerEvent) => {
+          const dx = ((ev.clientX - startX) / Math.max(1, rect.width)) * signX;
+          const dy = ((ev.clientY - startY) / Math.max(1, rect.height)) * signY;
+          const delta = (dx + dy) * 0.5;
+          const origW = 1 / origScale;
+          const newW = Math.max(1 / 2.6, Math.min(1 / 1.2, origW + delta * 2));
+          selZ.scale = Math.round((1 / newW) * 10) / 10;
+          tag.textContent = `Zoom ${selZ.scale.toFixed(1)}×`;
+          applyZoomBoxRect();
+        };
+        const onUp = () => {
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          renderInspector();
+          renderTimelineTracks();
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+      zBox.append(h);
+    }
+    zBox.addEventListener('pointerdown', e => {
+      if ((e.target as HTMLElement).closest('.st-ov-hdl')) return;
+      e.stopPropagation();
+      if (!stageFrameEl) return;
+      const rect = stageFrameEl.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const origX = selZ.x, origY = selZ.y;
+      let moved = false;
+      const onMove = (ev: PointerEvent) => {
+        if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 3) { pushUndo(); moved = true; }
+        if (!moved) return;
+        selZ.x = Math.max(0.05, Math.min(0.95, origX + (ev.clientX - startX) / Math.max(1, rect.width)));
+        selZ.y = Math.max(0.05, Math.min(0.95, origY + (ev.clientY - startY) / Math.max(1, rect.height)));
+        applyZoomBoxRect();
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        if (moved) renderInspector();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+    stageOverlaysEl.append(zBox);
+  }
+
   for (const ov of project.overlays) {
     const visible = now >= ov.start && now <= ov.end;
     const isSel = selectedSeg?.kind === 'overlay' && selectedSeg.id === ov.id;
@@ -249,23 +331,110 @@ function renderStageOverlays() {
       box.style.width = `${(ov.w * 100).toFixed(2)}%`;
       box.style.height = `${(ov.h * 100).toFixed(2)}%`;
       if (!visible) box.style.opacity = '0.45';
-      box.append(el('span', 'st-ov-censor-tag', tr('studio.tl.censor')));
+      const tag = el('span', 'st-ov-censor-tag', tr('studio.tl.censor'));
+      box.append(tag);
+      for (const dir of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as ResizeDir[]) {
+        const h = el('div', `st-ov-hdl ${dir}`);
+        wireOverlayResize(h, box, tag, ov.id, 'censor', dir);
+        box.append(h);
+      }
       wireStageDrag(box, ov.id, 'censor');
       stageOverlaysEl.append(box);
     } else {
-      const pill = el('div', `st-ov-text${isSel ? ' on' : ''}`, ov.text || tr('studio.cap.defaultText'));
+      const pill = el('div', `st-ov-text${isSel ? ' on' : ''}`);
       pill.style.left = `${(ov.x * 100).toFixed(2)}%`;
       pill.style.top = `${(ov.y * 100).toFixed(2)}%`;
+      pill.style.minWidth = `${(ov.w * 100).toFixed(2)}%`;
+      pill.style.minHeight = `${(ov.h * 100).toFixed(2)}%`;
+      pill.style.fontSize = `${Math.max(11, Math.min(34, Math.round(frameH * ov.h * 0.42)))}px`;
       pill.style.background = ov.color || '#6D5EFC';
       if (!visible) pill.style.opacity = '0.45';
+      const txtSpan = el('span', 'st-ov-text-lbl', ov.text || tr('studio.cap.defaultText'));
+      pill.append(txtSpan);
+      for (const dir of ['nw', 'ne', 'sw', 'se', 'w', 'e'] as ResizeDir[]) {
+        const h = el('div', `st-ov-hdl ${dir}`);
+        wireOverlayResize(h, pill, txtSpan, ov.id, 'text', dir);
+        pill.append(h);
+      }
       wireStageDrag(pill, ov.id, 'text');
       stageOverlaysEl.append(pill);
     }
   }
 }
 
+function wireOverlayResize(
+  handle: HTMLElement,
+  node: HTMLElement,
+  labelNode: HTMLElement,
+  ovId: string,
+  kind: 'text' | 'censor',
+  dir: ResizeDir,
+) {
+  handle.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (!project || !stageFrameEl) return;
+    selectedSeg = { kind: 'overlay', id: ovId };
+    const ov = project.overlays.find(o => o.id === ovId);
+    if (!ov) return;
+    pushUndo();
+    const rect = stageFrameEl.getBoundingClientRect();
+    const startX = e.clientX, startY = e.clientY;
+    const ox = ov.x, oy = ov.y, ow = ov.w, oh = ov.h;
+    const origText = labelNode.textContent ?? '';
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) / Math.max(1, rect.width);
+      const dy = (ev.clientY - startY) / Math.max(1, rect.height);
+      if (kind === 'censor') {
+        let nx = ox, ny = oy, nw = ow, nh = oh;
+        if (dir.includes('e')) nw = Math.max(0.04, Math.min(1 - ox, ow + dx));
+        if (dir.includes('s')) nh = Math.max(0.03, Math.min(1 - oy, oh + dy));
+        if (dir.includes('w')) {
+          const maxShift = ow - 0.04;
+          const shift = Math.max(-ox, Math.min(maxShift, dx));
+          nx = ox + shift;
+          nw = ow - shift;
+        }
+        if (dir.includes('n')) {
+          const maxShift = oh - 0.03;
+          const shift = Math.max(-oy, Math.min(maxShift, dy));
+          ny = oy + shift;
+          nh = oh - shift;
+        }
+        ov.x = nx; ov.y = ny; ov.w = nw; ov.h = nh;
+        node.style.left = `${(nx * 100).toFixed(2)}%`;
+        node.style.top = `${(ny * 100).toFixed(2)}%`;
+        node.style.width = `${(nw * 100).toFixed(2)}%`;
+        node.style.height = `${(nh * 100).toFixed(2)}%`;
+        labelNode.textContent = `${Math.round(nw * 100)}% × ${Math.round(nh * 100)}%`;
+      } else {
+        // Text pill is centered at (ov.x, ov.y), so dragging either side resizes symmetrically
+        let nw = ow, nh = oh;
+        if (dir.includes('e')) nw = Math.max(0.08, Math.min(0.92, ow + dx * 2));
+        if (dir.includes('w')) nw = Math.max(0.08, Math.min(0.92, ow - dx * 2));
+        if (dir.includes('s')) nh = Math.max(0.04, Math.min(0.32, oh + dy * 2));
+        if (dir.includes('n')) nh = Math.max(0.04, Math.min(0.32, oh - dy * 2));
+        ov.w = nw; ov.h = nh;
+        node.style.minWidth = `${(nw * 100).toFixed(2)}%`;
+        node.style.minHeight = `${(nh * 100).toFixed(2)}%`;
+        node.style.fontSize = `${Math.max(11, Math.min(34, Math.round(rect.height * nh * 0.42)))}px`;
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      if (kind === 'censor') labelNode.textContent = origText;
+      renderStageOverlays();
+      renderInspector();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}
+
 function wireStageDrag(node: HTMLElement, ovId: string, kind: 'text' | 'censor') {
   node.addEventListener('pointerdown', e => {
+    if ((e.target as HTMLElement).closest('.st-ov-hdl')) return;
     e.stopPropagation();
     if (!project || !stageFrameEl) return;
     selectedSeg = { kind: 'overlay', id: ovId };
@@ -298,7 +467,7 @@ function wireStageDrag(node: HTMLElement, ovId: string, kind: 'text' | 'censor')
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
-      if (moved) renderInspector();
+      if (moved) { renderStageOverlays(); renderInspector(); }
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -345,20 +514,23 @@ function drawFrameLoop() {
       screenVideo.style.transformOrigin = `${(z.x * 100).toFixed(2)}% ${(z.y * 100).toFixed(2)}%`;
       screenVideo.style.transform = `scale(${z.scale.toFixed(4)})`;
       if (stageZoomBadgeEl) {
-        stageZoomBadgeEl.hidden = false;
-        stageZoomBadgeEl.textContent = `Zoom ${z.scale.toFixed(1)}×`;
+        if (z.scale >= 1.05) {
+          stageZoomBadgeEl.hidden = false;
+          stageZoomBadgeEl.textContent = `Zoom ${z.scale.toFixed(1)}×`;
+        } else {
+          stageZoomBadgeEl.hidden = true;
+        }
       }
     } else {
       screenVideo.style.transform = '';
       if (stageZoomBadgeEl) stageZoomBadgeEl.hidden = true;
     }
 
-    // Camera auto-shrink during zoom (`avoidZoom`)
-    if (camVideo && project.camera.enabled) {
+    // Camera auto-shrink during zoom (`avoidZoom`) — apply positive scale on outer wrapper so mirror never clips!
+    if (camWrapEl && project.camera.enabled) {
       const zoomFactor = Math.max(0, Math.min(1, (z.scale - 1) / 0.5));
       const shrink = project.camera.avoidZoom ? 1 - 0.28 * zoomFactor : 1;
-      const sx = project.camera.mirror ? -shrink : shrink;
-      camVideo.style.transform = `scale(${sx.toFixed(3)}, ${shrink.toFixed(3)})`;
+      camWrapEl.style.transform = shrink < 0.999 ? `scale(${shrink.toFixed(3)})` : '';
     }
 
     // Update timecode & playhead
@@ -678,7 +850,12 @@ function renderSegmentInspector(panel: HTMLElement): boolean {
         sw.addEventListener('click', () => { pushUndo(); ov.color = c; renderStageOverlays(); renderInspector(); });
         cols.append(sw);
       }
-      panel.append(el('div', 'st-field-lbl', tr('studio.seg.text')), inp, el('div', 'st-field-lbl', tr('studio.seg.color')), cols);
+      panel.append(
+        el('div', 'st-field-lbl', tr('studio.seg.text')), inp,
+        el('div', 'st-field-lbl', tr('studio.seg.color')), cols,
+        rowSlider('W', Math.round(ov.w * 100), 8, 92, 1, '%', v => { ov.w = v / 100; renderStageOverlays(); }),
+        rowSlider('H', Math.round(ov.h * 100), 4, 32, 1, '%', v => { ov.h = v / 100; renderStageOverlays(); }),
+      );
     } else {
       panel.append(
         rowSlider(tr('studio.seg.pixel'), ov.pixelSize ?? 16, 8, 32, 2, 'px', v => { ov.pixelSize = v; renderStageOverlays(); }),
@@ -1212,32 +1389,208 @@ function wireTrimHandle(handle: HTMLElement, edge: 'in' | 'out', tracksEl: HTMLE
   });
 }
 
-function wireRangeDrag(
+function showTlTip(xPct: number, text: string) {
+  if (!tlTipEl) return;
+  tlTipEl.hidden = false;
+  tlTipEl.textContent = text;
+  tlTipEl.style.left = `${Math.max(6, Math.min(94, xPct)).toFixed(2)}%`;
+}
+
+function hideTlTip() {
+  if (tlTipEl) tlTipEl.hidden = true;
+}
+
+function setChipRangeBox(chip: HTMLElement, start: number, end: number, dur: number, minPx: number) {
+  const leftPct = Math.max(0, Math.min(98, (start / dur) * 100));
+  const rawWidthPct = Math.max(0.5, ((end - start) / dur) * 100);
+  const availPct = Math.max(2, 100 - leftPct);
+  chip.style.left = `${leftPct.toFixed(2)}%`;
+  chip.style.width = `min(${availPct.toFixed(2)}%, max(${minPx}px, ${rawWidthPct.toFixed(2)}%))`;
+}
+
+function wireRangeChip(
   chip: HTMLElement,
   item: { start: number; end: number },
-  tracksEl: HTMLElement,
-  onSelect: () => void,
+  lanesEl: HTMLElement,
+  minSpan: number,
+  minPx: number,
+  onSelectOnly: () => void,
 ) {
-  chip.addEventListener('pointerdown', e => {
+  const hLeft = el('span', 'st-seg-hdl l');
+  const hRight = el('span', 'st-seg-hdl r');
+  chip.append(hLeft, hRight);
+
+  const selectWithoutRebuild = () => {
+    lanesEl.querySelectorAll('.st-titem.on').forEach(n => n.classList.remove('on'));
+    chip.classList.add('on');
+    onSelectOnly();
+  };
+
+  // Drag left edge -> adjust start time
+  hLeft.addEventListener('pointerdown', e => {
     e.stopPropagation();
-    onSelect();
-    const rect = tracksEl.getBoundingClientRect();
+    selectWithoutRebuild();
+    pushUndo();
+    const rect = lanesEl.getBoundingClientRect();
+    const dur = Math.max(0.1, totalDuration);
+    const startX = e.clientX;
+    const origStart = item.start;
+    const onMove = (ev: PointerEvent) => {
+      const dt = ((ev.clientX - startX) / Math.max(1, rect.width)) * dur;
+      const ns = Math.max(0, Math.min(item.end - minSpan, origStart + dt));
+      item.start = Math.round(ns * 100) / 100;
+      setChipRangeBox(chip, item.start, item.end, dur, minPx);
+      seekTo(item.start);
+      showTlTip((item.start / dur) * 100, `${item.start.toFixed(2)}s – ${item.end.toFixed(2)}s (${(item.end - item.start).toFixed(2)}s)`);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      hideTlTip();
+      applyStageStyles();
+      renderInspector();
+      renderTimelineTracks();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+
+  // Drag right edge -> adjust end time
+  hRight.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    selectWithoutRebuild();
+    pushUndo();
+    const rect = lanesEl.getBoundingClientRect();
+    const dur = Math.max(0.1, totalDuration);
+    const startX = e.clientX;
+    const origEnd = item.end;
+    const onMove = (ev: PointerEvent) => {
+      const dt = ((ev.clientX - startX) / Math.max(1, rect.width)) * dur;
+      const ne = Math.min(dur, Math.max(item.start + minSpan, origEnd + dt));
+      item.end = Math.round(ne * 100) / 100;
+      setChipRangeBox(chip, item.start, item.end, dur, minPx);
+      seekTo(item.end);
+      showTlTip((item.end / dur) * 100, `${item.start.toFixed(2)}s – ${item.end.toFixed(2)}s (${(item.end - item.start).toFixed(2)}s)`);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      hideTlTip();
+      applyStageStyles();
+      renderInspector();
+      renderTimelineTracks();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+
+  // Drag body -> move entire segment keeping duration
+  chip.addEventListener('pointerdown', e => {
+    if ((e.target as HTMLElement).closest('.st-seg-hdl')) return;
+    e.stopPropagation();
+    selectWithoutRebuild();
+    const rect = lanesEl.getBoundingClientRect();
     const dur = Math.max(0.1, totalDuration);
     const startX = e.clientX;
     const origStart = item.start, origEnd = item.end, span = origEnd - origStart;
     let moved = false;
     const onMove = (ev: PointerEvent) => {
-      if (!moved && Math.abs(ev.clientX - startX) > 4) { pushUndo(); moved = true; }
+      if (!moved && Math.abs(ev.clientX - startX) > 3) { pushUndo(); moved = true; }
       if (!moved) return;
       const dt = ((ev.clientX - startX) / Math.max(1, rect.width)) * dur;
       const ns = Math.max(0, Math.min(dur - span, origStart + dt));
       item.start = Math.round(ns * 100) / 100;
       item.end = Math.round((ns + span) * 100) / 100;
-      chip.style.left = `${((item.start / dur) * 100).toFixed(2)}%`;
+      setChipRangeBox(chip, item.start, item.end, dur, minPx);
+      seekTo(item.start);
+      showTlTip(((item.start + item.end) * 0.5 / dur) * 100, `${item.start.toFixed(2)}s – ${item.end.toFixed(2)}s`);
     };
     const onUp = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      hideTlTip();
+      if (moved) { applyStageStyles(); renderInspector(); renderTimelineTracks(); }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}
+
+function wireFreezeChip(
+  chip: HTMLElement,
+  labelEl: HTMLElement,
+  fr: { id: string; at: number; duration: number },
+  lanesEl: HTMLElement,
+  dur: number,
+  onSelectOnly: () => void,
+) {
+  const freezeScale = Math.max(dur, 4.0);
+  const applyFreezeBox = () => {
+    const leftPct = Math.max(0, Math.min(96, (fr.at / dur) * 100));
+    const widthPct = Math.max(4.5, Math.min(48, (fr.duration / freezeScale) * 100));
+    const availPct = Math.max(3, 100 - leftPct);
+    chip.style.left = `${leftPct.toFixed(2)}%`;
+    chip.style.width = `min(${availPct.toFixed(2)}%, max(46px, ${widthPct.toFixed(2)}%))`;
+    labelEl.textContent = `${fr.duration.toFixed(1)}s`;
+  };
+  applyFreezeBox();
+
+  const hRight = el('span', 'st-seg-hdl r');
+  chip.append(hRight);
+
+  const selectWithoutRebuild = () => {
+    lanesEl.querySelectorAll('.st-titem.on').forEach(n => n.classList.remove('on'));
+    chip.classList.add('on');
+    onSelectOnly();
+  };
+
+  // Drag right edge -> adjust freeze duration directly on track!
+  hRight.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    selectWithoutRebuild();
+    pushUndo();
+    const rect = lanesEl.getBoundingClientRect();
+    const startX = e.clientX;
+    const origDur = fr.duration;
+    const onMove = (ev: PointerEvent) => {
+      const dd = ((ev.clientX - startX) / Math.max(1, rect.width)) * freezeScale;
+      fr.duration = Math.round(Math.max(0.2, Math.min(6.0, origDur + dd)) * 10) / 10;
+      applyFreezeBox();
+      showTlTip((fr.at / dur) * 100, `${fr.at.toFixed(2)}s · ${tr('studio.tl.freeze')} ${fr.duration.toFixed(1)}s`);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      hideTlTip();
+      renderInspector();
+      renderTimelineTracks();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+
+  // Drag body -> adjust freeze start time (`fr.at`) directly on track!
+  chip.addEventListener('pointerdown', e => {
+    if ((e.target as HTMLElement).closest('.st-seg-hdl')) return;
+    e.stopPropagation();
+    selectWithoutRebuild();
+    const rect = lanesEl.getBoundingClientRect();
+    const startX = e.clientX;
+    const origAt = fr.at;
+    let moved = false;
+    const onMove = (ev: PointerEvent) => {
+      if (!moved && Math.abs(ev.clientX - startX) > 3) { pushUndo(); moved = true; }
+      if (!moved) return;
+      const dt = ((ev.clientX - startX) / Math.max(1, rect.width)) * dur;
+      fr.at = Math.round(Math.max(0, Math.min(dur, origAt + dt)) * 100) / 100;
+      applyFreezeBox();
+      seekTo(fr.at);
+      showTlTip((fr.at / dur) * 100, `${fr.at.toFixed(2)}s · ${tr('studio.tl.freeze')} ${fr.duration.toFixed(1)}s`);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      hideTlTip();
       if (moved) { renderInspector(); renderTimelineTracks(); }
     };
     window.addEventListener('pointermove', onMove);
@@ -1306,14 +1659,13 @@ function renderTimelineTracks() {
   const zoomRow = el('div', 'st-trow');
   for (const z of project.zooms) {
     const isSel = selectedSeg?.kind === 'zoom' && selectedSeg.id === z.id;
-    const chip = el('button', `st-titem zoom${isSel ? ' on' : ''}`);
-    chip.style.left = pct(z.start);
-    chip.style.width = `max(58px, ${pct(z.end - z.start)})`;
-    chip.append(svgIcon('zoom-in', 11), el('span', '', `Zoom ${z.scale.toFixed(1)}×`));
-    wireRangeDrag(chip, z, lanes, () => {
+    const chip = el('div', `st-titem zoom${isSel ? ' on' : ''}`);
+    setChipRangeBox(chip, z.start, z.end, dur, 58);
+    chip.append(svgIcon('zoom-in', 11), el('span', 'st-titem-lbl', `Zoom ${z.scale.toFixed(1)}×`));
+    wireRangeChip(chip, z, lanes, 0.2, 58, () => {
       selectedSeg = { kind: 'zoom', id: z.id };
       seekTo((z.start + z.end) * 0.5);
-      applyStageStyles(); renderInspector(); renderTimelineTracks();
+      applyStageStyles(); renderInspector();
     });
     zoomRow.append(chip);
   }
@@ -1323,41 +1675,37 @@ function renderTimelineTracks() {
   const editsRow = el('div', 'st-trow');
   for (const c of project.cuts) {
     const isSel = selectedSeg?.kind === 'cut' && selectedSeg.id === c.id;
-    const chip = el('button', `st-titem cut${isSel ? ' on' : ''}`);
-    chip.style.left = pct(c.start);
-    chip.style.width = `max(48px, ${pct(c.end - c.start)})`;
-    chip.append(svgIcon('scissors', 11), el('span', '', tr('studio.tl.cut')));
-    wireRangeDrag(chip, c, lanes, () => {
+    const chip = el('div', `st-titem cut${isSel ? ' on' : ''}`);
+    setChipRangeBox(chip, c.start, c.end, dur, 48);
+    chip.append(svgIcon('scissors', 11), el('span', 'st-titem-lbl', tr('studio.tl.cut')));
+    wireRangeChip(chip, c, lanes, 0.15, 48, () => {
       selectedSeg = { kind: 'cut', id: c.id };
       seekTo(c.start);
-      renderInspector(); renderTimelineTracks();
+      renderInspector();
     });
     editsRow.append(chip);
   }
   for (const sp of project.speeds) {
     const isSel = selectedSeg?.kind === 'speed' && selectedSeg.id === sp.id;
-    const chip = el('button', `st-titem speed${isSel ? ' on' : ''}`);
-    chip.style.left = pct(sp.start);
-    chip.style.width = `max(56px, ${pct(sp.end - sp.start)})`;
-    chip.append(svgIcon('gauge', 11), el('span', '', `${sp.rate}×`));
-    wireRangeDrag(chip, sp, lanes, () => {
+    const chip = el('div', `st-titem speed${isSel ? ' on' : ''}`);
+    setChipRangeBox(chip, sp.start, sp.end, dur, 52);
+    chip.append(svgIcon('gauge', 11), el('span', 'st-titem-lbl', `${sp.rate}×`));
+    wireRangeChip(chip, sp, lanes, 0.2, 52, () => {
       selectedSeg = { kind: 'speed', id: sp.id };
       seekTo(sp.start);
-      renderInspector(); renderTimelineTracks();
+      renderInspector();
     });
     editsRow.append(chip);
   }
   for (const fr of project.freezes) {
     const isSel = selectedSeg?.kind === 'freeze' && selectedSeg.id === fr.id;
-    const chip = el('button', `st-titem freeze${isSel ? ' on' : ''}`);
-    chip.style.left = pct(fr.at);
-    chip.style.width = '54px';
-    chip.append(svgIcon('snowflake', 11), el('span', '', `${fr.duration}s`));
-    chip.addEventListener('click', e => {
-      e.stopPropagation();
+    const chip = el('div', `st-titem freeze${isSel ? ' on' : ''}`);
+    const lbl = el('span', 'st-titem-lbl', `${fr.duration.toFixed(1)}s`);
+    chip.append(svgIcon('snowflake', 11), lbl);
+    wireFreezeChip(chip, lbl, fr, lanes, dur, () => {
       selectedSeg = { kind: 'freeze', id: fr.id };
       seekTo(fr.at);
-      renderInspector(); renderTimelineTracks();
+      renderInspector();
     });
     editsRow.append(chip);
   }
@@ -1367,14 +1715,13 @@ function renderTimelineTracks() {
   const ovRow = el('div', 'st-trow');
   for (const ov of project.overlays) {
     const isSel = selectedSeg?.kind === 'overlay' && selectedSeg.id === ov.id;
-    const chip = el('button', `st-titem ${ov.kind === 'censor' ? 'censor' : 'text'}${isSel ? ' on' : ''}`);
-    chip.style.left = pct(ov.start);
-    chip.style.width = `max(64px, ${pct(ov.end - ov.start)})`;
-    chip.append(svgIcon(ov.kind === 'censor' ? 'grid' : 'type', 11), el('span', '', ov.kind === 'censor' ? tr('studio.tl.censor') : (ov.text || tr('studio.tl.text'))));
-    wireRangeDrag(chip, ov, lanes, () => {
+    const chip = el('div', `st-titem ${ov.kind === 'censor' ? 'censor' : 'text'}${isSel ? ' on' : ''}`);
+    setChipRangeBox(chip, ov.start, ov.end, dur, 56);
+    chip.append(svgIcon(ov.kind === 'censor' ? 'grid' : 'type', 11), el('span', 'st-titem-lbl', ov.kind === 'censor' ? tr('studio.tl.censor') : (ov.text || tr('studio.tl.text'))));
+    wireRangeChip(chip, ov, lanes, 0.2, 56, () => {
       selectedSeg = { kind: 'overlay', id: ov.id };
       seekTo(ov.start + 0.05);
-      renderStageOverlays(); renderInspector(); renderTimelineTracks();
+      renderStageOverlays(); renderInspector();
     });
     ovRow.append(chip);
   }
@@ -1384,18 +1731,22 @@ function renderTimelineTracks() {
   const capRow = el('div', 'st-trow');
   for (const cap of project.captions) {
     const isSel = selectedSeg?.kind === 'caption' && selectedSeg.id === cap.id;
-    const chip = el('button', `st-titem caption${isSel ? ' on' : ''}`);
-    chip.style.left = pct(cap.start);
-    chip.style.width = `max(70px, ${pct(cap.end - cap.start)})`;
-    chip.append(svgIcon('message-square', 11), el('span', '', cap.text || tr('studio.tl.caption')));
-    wireRangeDrag(chip, cap, lanes, () => {
+    const chip = el('div', `st-titem caption${isSel ? ' on' : ''}`);
+    setChipRangeBox(chip, cap.start, cap.end, dur, 60);
+    chip.append(svgIcon('message-square', 11), el('span', 'st-titem-lbl', cap.text || tr('studio.tl.caption')));
+    wireRangeChip(chip, cap, lanes, 0.2, 60, () => {
       selectedSeg = { kind: 'caption', id: cap.id };
       seekTo(cap.start + 0.05);
-      renderInspector(); renderTimelineTracks();
+      renderInspector();
     });
     capRow.append(chip);
   }
   lanes.append(capRow);
+
+  // Floating drag/resize time readout pill
+  tlTipEl = el('div', 'st-tl-tip');
+  tlTipEl.hidden = true;
+  lanes.append(tlTipEl);
 
   // White triangle Playhead needle (`#cap6`)
   playheadEl = el('div', 'st-playhead');
@@ -1759,7 +2110,7 @@ function renderShell() {
   zoomFocusDot.hidden = true;
 
   stageFrameEl.addEventListener('click', e => {
-    if ((e.target as HTMLElement).closest('.st-ov-censor, .st-ov-text')) return;
+    if ((e.target as HTMLElement).closest('.st-ov-censor, .st-ov-text, .st-zoom-box, .st-cam-wrap')) return;
     if (!screenVideo || !project) return;
     const selZ = currentSelectedZoom();
     if (selZ) {
@@ -1775,8 +2126,10 @@ function renderShell() {
 
   stageFrameEl.append(screenVideo, telCanvas, stageOverlaysEl, captionBarEl, keyBadgeEl, zoomFocusDot);
 
+  camWrapEl = null;
   camVideo = null;
   if (rec.tracks?.['camera.mp4']) {
+    camWrapEl = el('div', 'st-cam-wrap');
     camVideo = el('video', 'st-cam-pip') as HTMLVideoElement;
     camVideo.src = captureV2.trackURL(rec.id, 'camera.mp4');
     camVideo.muted = true;
@@ -1787,7 +2140,68 @@ function renderShell() {
         camVideo.currentTime = 0.2;
       }
     });
-    stageFrameEl.append(camVideo);
+    const camHdl = el('div', 'st-cam-hdl');
+    camHdl.title = tr('studio.cam.size');
+    camHdl.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      if (!project || !stageFrameEl || !camWrapEl) return;
+      pushUndo();
+      const rect = stageFrameEl.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const origSize = project.camera.size;
+      const pos = project.camera.position;
+      const sx = pos.endsWith('l') ? 1 : -1;
+      const sy = pos.startsWith('t') ? 1 : -1;
+      const onMove = (ev: PointerEvent) => {
+        const dx = ((ev.clientX - startX) / Math.max(1, rect.width)) * sx;
+        const dy = ((ev.clientY - startY) / Math.max(1, rect.height)) * sy;
+        const delta = (dx + dy) * 0.65;
+        project!.camera.size = Math.round(Math.max(0.10, Math.min(0.42, origSize + delta)) * 100) / 100;
+        camWrapEl!.style.width = `${Math.round(project!.camera.size * 100)}%`;
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        applyStageStyles();
+        renderInspector();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+    camWrapEl.addEventListener('pointerdown', e => {
+      if ((e.target as HTMLElement).closest('.st-cam-hdl')) return;
+      e.stopPropagation();
+      if (!project || !stageFrameEl) return;
+      const rect = stageFrameEl.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      let moved = false;
+      const onMove = (ev: PointerEvent) => {
+        if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 12) { pushUndo(); moved = true; }
+        if (!moved) return;
+        const fx = (ev.clientX - rect.left) / Math.max(1, rect.width);
+        const fy = (ev.clientY - rect.top) / Math.max(1, rect.height);
+        const corner: CameraCorner = `${fy < 0.5 ? 't' : 'b'}${fx < 0.5 ? 'l' : 'r'}` as CameraCorner;
+        if (project!.camera.position !== corner) {
+          project!.camera.position = corner;
+          applyStageStyles();
+        }
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        if (!moved) {
+          activeTab = 'cam';
+          selectedSeg = null;
+          renderRail(); applyStageStyles(); renderInspector(); renderTimelineTracks();
+        } else {
+          renderInspector();
+        }
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+    camWrapEl.append(camVideo, camHdl);
+    stageFrameEl.append(camWrapEl);
   }
 
   micAudio = null;
