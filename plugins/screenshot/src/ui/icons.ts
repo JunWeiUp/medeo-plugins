@@ -50,7 +50,12 @@ export type IconName =
   | 'check'
   | 'plus'
   | 'trash'
-  | 'info';
+  | 'info'
+  | 'undo'
+  | 'redo'
+  | 'type'
+  | 'grid'
+  | 'message-square';
 
 const ICONS: Record<IconName, Shape[]> = {
   volume: [
@@ -265,6 +270,30 @@ const ICONS: Record<IconName, Shape[]> = {
     ['circle', 12, 12, 9],
     ['line', 12, 16, 12, 11.5],
     ['line', 12, 8.2, 12.01, 8.2],
+  ],
+  undo: [
+    ['path', 'M9 14L4 9l5-5'],
+    ['path', 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11'],
+  ],
+  redo: [
+    ['path', 'M15 14l5-5-5-5'],
+    ['path', 'M20 9H9.5a5.5 5.5 0 0 0 0 11H13'],
+  ],
+  type: [
+    ['path', 'M4 7V5h16v2'],
+    ['line', 12, 5, 12, 19],
+    ['line', 8.5, 19, 15.5, 19],
+  ],
+  grid: [
+    ['rect', 3.5, 3.5, 7, 7, 1.2],
+    ['rect', 13.5, 3.5, 7, 7, 1.2],
+    ['rect', 3.5, 13.5, 7, 7, 1.2],
+    ['rect', 13.5, 13.5, 7, 7, 1.2],
+  ],
+  'message-square': [
+    ['path', 'M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z'],
+    ['line', 8, 9, 16, 9],
+    ['line', 8, 13, 13, 13],
   ],
 };
 

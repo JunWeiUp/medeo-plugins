@@ -162,6 +162,7 @@ export type FromReview =
       copyFile?: boolean;
       sendDrive?: boolean;
       driveChoose?: boolean;
+      revealAfter?: boolean;
     }
   | { type: 'review-reveal-path'; filePath: string }
   | { type: 'review-reveal'; id: string }

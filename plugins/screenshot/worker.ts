@@ -492,8 +492,8 @@ async function openReview(recordId?: string) {
     id: REVIEW,
     entry: 'ui/review.html',
     title: await label('review.title'),
-    width: 1240,
-    height: 780,
+    width: 1280,
+    height: 820,
     resizable: true,
     movable: true,
   });
@@ -525,6 +525,7 @@ async function runStudioExport(req: {
   copyFile?: boolean;
   sendDrive?: boolean;
   driveChoose?: boolean;
+  revealAfter?: boolean;
 }) {
   reviewBusy = req.format;
   await pushReviewState();
@@ -608,7 +609,7 @@ async function runStudioExport(req: {
       ].join('\n');
       await copyText(md);
     }
-    if (settings.openAfterSave && exported.path) {
+    if ((settings.openAfterSave || req.revealAfter) && exported.path) {
       await run(OPEN, ['-R', exported.path]).catch(() => {});
     }
     await post({

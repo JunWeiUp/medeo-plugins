@@ -20,9 +20,12 @@ import {
   normalizeRecordingConfig,
 } from '../src/recording.ts';
 import {
+  activeKeystrokes,
   autoGenerateZooms,
   buildExportRecipe,
+  computeOutputDuration,
   createDefaultStudioProject,
+  estimateExportSpec,
   evaluateZoom,
   parseTelemetryJsonl,
 } from '../src/studio.ts';
@@ -239,7 +242,43 @@ test('Studio telemetry parsing, Auto-Zoom clustering, easing, and export recipe'
 
   const proj = createDefaultStudioProject(6.0, DEFAULT_RECORDING_CONFIG, true);
   proj.zooms = zooms;
+  proj.cuts.push({ id: 'c1', start: 2.0, end: 3.0 });
+  proj.speeds.push({ id: 's1', start: 3.0, end: 4.0, rate: 0.5 });
+  proj.freezes.push({ id: 'f1', at: 4.5, duration: 1.0 });
+  proj.overlays.push({ id: 'ov1', kind: 'censor', start: 0.5, end: 2.0, x: 0.2, y: 0.2, w: 0.3, h: 0.15, pixelSize: 16 });
+  proj.overlays.push({ id: 'ov2', kind: 'text', start: 1.0, end: 2.5, x: 0.5, y: 0.15, w: 0.3, h: 0.08, text: 'Step 1', color: '#6D5EFC' });
+  proj.captions.push({ id: 'cap1', start: 0.0, end: 3.0, text: 'Hello world' });
+  proj.showCaptions = true;
+
+  // 6.0 - 1.0 (cut) + 1.0 (0.5x slowmo on 1s span) + 1.0 (freeze) = 7.0s
+  assert.equal(Math.round(computeOutputDuration(proj) * 10) / 10, 7.0);
+
+  // Keystroke filter: shortcutsOnly and per-key exclusion
+  const keyEvents = parseTelemetryJsonl([
+    JSON.stringify({ type: 'key', t: 1.0, modifiers: [], label: 'A', key_code: 0 }),
+    JSON.stringify({ type: 'key', t: 2.0, modifiers: ['⌘'], label: '⌘S', key_code: 1 }),
+  ].join('\n'));
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 2);
+  proj.cursor.shortcutsOnly = true;
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 1);
+  proj.cursor.excludedKeyTimes = [2.0];
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 0);
+
+  const spec = estimateExportSpec(proj, 2560, 1440, 'hevc120');
+  assert.equal(spec.format, 'mp4');
+  assert.equal(spec.fps, 120);
+  assert.equal(spec.codec, 'hevc');
+  assert.ok(spec.estimatedBytes > 0);
+
+  const gifSpec = estimateExportSpec(proj, 2560, 1440, 'gif20');
+  assert.equal(gifSpec.format, 'gif');
+  assert.equal(gifSpec.fps, 20);
+
   const recipe = buildExportRecipe(proj, 'mp4');
   assert.equal(recipe.fps, DEFAULT_RECORDING_CONFIG.fps);
-  assert.equal((recipe.zooms).length, 1);
+  assert.equal(recipe.zooms.length, 1);
+  assert.equal(recipe.overlays.length, 2);
+  assert.equal(recipe.captions.length, 1);
+  assert.equal(recipe.camera.avoidZoom, true);
+  assert.equal(recipe.cursor.shortcutsOnly, true);
 });
