@@ -138,6 +138,7 @@
   "tray.ocr": "Capture Text (OCR)",
   "tray.quick": "Quick Capture",
   "tray.settings": "Settings…",
+  "tray.quit": "Quit Screenshot & Recorder",
   "action.drive": "Store to Medeo Drive",
   "drive.prefix": "Screenshot",
   "drive.tip.title": "Storing to Medeo Drive needs the Netdisk plugin",

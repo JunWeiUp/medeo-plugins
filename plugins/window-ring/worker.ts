@@ -160,14 +160,30 @@ async function showTray(): Promise<void> {
     { separator: true as const },
     { id: 'tray.settings', title: await label('tray.settings') },
     { id: 'tray.hide', title: await label('tray.hide') },
+    { separator: true as const },
+    { id: 'tray.quit', title: await label('tray.quit') },
   ];
   await tray.set('', items, { icon: 'ui/trayTemplate.png' });
+}
+async function quitWindowRing(): Promise<void> {
+  if (exited) return;
+  exited = true;
+  clearTimeout(resumeTimer);
+  ring = undefined;
+  pendingRing = undefined;
+  await Promise.allSettled([
+    appWindows.close(RING),
+    appWindows.close(SETTINGS),
+    ...BINDINGS.map(b => shortcuts.unregister(b.id)),
+    tray.remove(),
+  ]);
 }
 async function trayPressed(): Promise<void> {
   const pressed = await tray.events().catch(() => []) as { id: string }[];
   for (const { id } of pressed) {
     if (exited) return;
     const what = id.replace(/^tray\./, '');
+    if (what === 'quit') { await quitWindowRing(); return; }
     if (what === 'settings') await openSettings();
     else if (what === 'hide') await setTray(false);
     else await trigger(what).catch(error => console.warn('menu failed', what, code(error)));

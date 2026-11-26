@@ -138,6 +138,7 @@
   "tray.ocr": "截圖辨識文字（OCR）",
   "tray.quick": "快速截圖",
   "tray.settings": "設定…",
+  "tray.quit": "結束截圖與錄屏",
   "action.drive": "存到網盤",
   "drive.prefix": "截圖",
   "drive.tip.title": "存到網盤需要「網盤」外掛",

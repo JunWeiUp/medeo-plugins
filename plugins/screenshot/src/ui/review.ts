@@ -1655,13 +1655,19 @@ function renderTimelineTracks() {
   clipRow.append(activeClip);
   lanes.append(clipRow);
 
+  const appendChipInner = (chip: HTMLElement, icon: IconName, textEl: HTMLElement) => {
+    const inner = el('span', 'st-titem-inner');
+    inner.append(svgIcon(icon, 11), textEl);
+    chip.append(inner);
+  };
+
   // Lane 2: Zoom
   const zoomRow = el('div', 'st-trow');
   for (const z of project.zooms) {
     const isSel = selectedSeg?.kind === 'zoom' && selectedSeg.id === z.id;
     const chip = el('div', `st-titem zoom${isSel ? ' on' : ''}`);
     setChipRangeBox(chip, z.start, z.end, dur, 58);
-    chip.append(svgIcon('zoom-in', 11), el('span', 'st-titem-lbl', `Zoom ${z.scale.toFixed(1)}×`));
+    appendChipInner(chip, 'zoom-in', el('span', 'st-titem-lbl', `Zoom ${z.scale.toFixed(1)}×`));
     wireRangeChip(chip, z, lanes, 0.2, 58, () => {
       selectedSeg = { kind: 'zoom', id: z.id };
       seekTo((z.start + z.end) * 0.5);
@@ -1677,7 +1683,7 @@ function renderTimelineTracks() {
     const isSel = selectedSeg?.kind === 'cut' && selectedSeg.id === c.id;
     const chip = el('div', `st-titem cut${isSel ? ' on' : ''}`);
     setChipRangeBox(chip, c.start, c.end, dur, 48);
-    chip.append(svgIcon('scissors', 11), el('span', 'st-titem-lbl', tr('studio.tl.cut')));
+    appendChipInner(chip, 'scissors', el('span', 'st-titem-lbl', tr('studio.tl.cut')));
     wireRangeChip(chip, c, lanes, 0.15, 48, () => {
       selectedSeg = { kind: 'cut', id: c.id };
       seekTo(c.start);
@@ -1689,7 +1695,7 @@ function renderTimelineTracks() {
     const isSel = selectedSeg?.kind === 'speed' && selectedSeg.id === sp.id;
     const chip = el('div', `st-titem speed${isSel ? ' on' : ''}`);
     setChipRangeBox(chip, sp.start, sp.end, dur, 52);
-    chip.append(svgIcon('gauge', 11), el('span', 'st-titem-lbl', `${sp.rate}×`));
+    appendChipInner(chip, 'gauge', el('span', 'st-titem-lbl', `${sp.rate}×`));
     wireRangeChip(chip, sp, lanes, 0.2, 52, () => {
       selectedSeg = { kind: 'speed', id: sp.id };
       seekTo(sp.start);
@@ -1701,7 +1707,7 @@ function renderTimelineTracks() {
     const isSel = selectedSeg?.kind === 'freeze' && selectedSeg.id === fr.id;
     const chip = el('div', `st-titem freeze${isSel ? ' on' : ''}`);
     const lbl = el('span', 'st-titem-lbl', `${fr.duration.toFixed(1)}s`);
-    chip.append(svgIcon('snowflake', 11), lbl);
+    appendChipInner(chip, 'snowflake', lbl);
     wireFreezeChip(chip, lbl, fr, lanes, dur, () => {
       selectedSeg = { kind: 'freeze', id: fr.id };
       seekTo(fr.at);
@@ -1717,7 +1723,7 @@ function renderTimelineTracks() {
     const isSel = selectedSeg?.kind === 'overlay' && selectedSeg.id === ov.id;
     const chip = el('div', `st-titem ${ov.kind === 'censor' ? 'censor' : 'text'}${isSel ? ' on' : ''}`);
     setChipRangeBox(chip, ov.start, ov.end, dur, 56);
-    chip.append(svgIcon(ov.kind === 'censor' ? 'grid' : 'type', 11), el('span', 'st-titem-lbl', ov.kind === 'censor' ? tr('studio.tl.censor') : (ov.text || tr('studio.tl.text'))));
+    appendChipInner(chip, ov.kind === 'censor' ? 'grid' : 'type', el('span', 'st-titem-lbl', ov.kind === 'censor' ? tr('studio.tl.censor') : (ov.text || tr('studio.tl.text'))));
     wireRangeChip(chip, ov, lanes, 0.2, 56, () => {
       selectedSeg = { kind: 'overlay', id: ov.id };
       seekTo(ov.start + 0.05);
@@ -1733,7 +1739,7 @@ function renderTimelineTracks() {
     const isSel = selectedSeg?.kind === 'caption' && selectedSeg.id === cap.id;
     const chip = el('div', `st-titem caption${isSel ? ' on' : ''}`);
     setChipRangeBox(chip, cap.start, cap.end, dur, 60);
-    chip.append(svgIcon('message-square', 11), el('span', 'st-titem-lbl', cap.text || tr('studio.tl.caption')));
+    appendChipInner(chip, 'message-square', el('span', 'st-titem-lbl', cap.text || tr('studio.tl.caption')));
     wireRangeChip(chip, cap, lanes, 0.2, 60, () => {
       selectedSeg = { kind: 'caption', id: cap.id };
       seekTo(cap.start + 0.05);

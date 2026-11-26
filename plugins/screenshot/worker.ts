@@ -37,6 +37,7 @@ const PRIVACY_URL: Record<'screen' | 'mic' | 'camera' | 'input', string> = {
 const NETDISK = 'app.medeo.netdisk';
 
 let root = '', dir = '', settingsFile = '';
+let exited = false;
 let settings: Settings = DEFAULTS;
 let errors: SettingsState['errors'] = {};
 let registered: Record<string, string> = {};
@@ -729,12 +730,15 @@ async function registerShortcuts() {
 }
 
 async function showTray() {
+  if (exited) return;
   if (activeRec) {
     await tray.set('●', [
       { id: 'tray.rec-stop', title: await label('tray.recStop') },
       { id: 'tray.rec-pause', title: await label(activeRec.paused ? 'hud.resume' : 'hud.pause') },
       { separator: true },
       { id: 'tray.rec-cancel', title: await label('hud.cancel') },
+      { separator: true },
+      { id: 'tray.quit', title: await label('tray.quit') },
     ], { icon: 'resources/trayTemplate.png', click: 'tray.rec-stop' });
     return;
   }
@@ -750,7 +754,31 @@ async function showTray() {
     { id: 'tray.history', title: await label('tray.history') },
     { id: 'tray.folder', title: await label('tray.folder') },
     { id: 'tray.settings', title: await label('tray.settings') },
+    { separator: true },
+    { id: 'tray.quit', title: await label('tray.quit') },
   ], { icon: 'resources/trayTemplate.png', click: 'tray.area' });
+}
+
+/** Stop any active capture, close all windows, release shortcuts and tray, then exit cleanly. */
+async function quitScreenshot() {
+  if (exited) return;
+  exited = true;
+  const tasks: Promise<unknown>[] = [];
+  if (activeRec) {
+    const rec = activeRec;
+    activeRec = null;
+    if (rec.pollTimer) clearInterval(rec.pollTimer);
+    tasks.push(captureV2.cancel(rec.id).catch(() => {}));
+  }
+  const winIds = [OVERLAY, SETTINGS, HUD, BORDER, REVIEW, ...pins.keys()];
+  pins.clear();
+  for (const wid of winIds) tasks.push(windowsV2.close(wid).catch(() => {}));
+  for (const id of Object.keys(registered)) tasks.push(shortcuts.unregister(id).catch(() => {}));
+  registered = {};
+  tasks.push(tray.remove().catch(() => {}));
+  await Promise.allSettled(tasks);
+  // The host observes a normal exit, stops this instance and refreshes the plugin center.
+  process.exit(0);
 }
 
 async function openSettings() {
@@ -934,6 +962,7 @@ function onMessage(m: FromWindow) {
 
 export const { activate, deactivate } = definePlugin({
   activate(context) {
+    exited = false;
     root = context.extensionPath!; dir = context.storagePath!; settingsFile = path.join(dir, 'settings.json');
     ffmpegBin = detectFfmpeg();
     let started: Promise<void> | null = null;
@@ -945,15 +974,17 @@ export const { activate, deactivate } = definePlugin({
       await showTray().catch(error => console.error('tray failed:', error));
       void fetchDevices(false);
     })().catch(error => { started = null; throw error; });
-    const later = (task: () => unknown) => { void ready().then(task).catch(error => console.warn('screenshot:', String(error))); };
+    const later = (task: () => unknown) => { if (exited) return; void ready().then(() => { if (!exited) return task(); }).catch(error => console.warn('screenshot:', String(error))); };
     context.subscriptions.push({ dispose: channel.onMessage<FromWindow>(m => later(() => onMessage(m))) });
     context.subscriptions.push({ dispose: events.onSignal('shortcuts', () => later(async () => {
       const pressed = await shortcuts.events().catch(() => []) as { id: string }[];
-      for (const p of pressed) if (MODES[p.id]) void serial(() => shoot(MODES[p.id].mode));
+      for (const p of pressed) if (!exited && MODES[p.id]) void serial(() => shoot(MODES[p.id].mode));
     })) });
     context.subscriptions.push({ dispose: events.onSignal('tray', () => later(async () => {
       const pressed = await tray.events().catch(() => []) as { id: string }[];
       for (const { id } of pressed) {
+        if (exited) return;
+        if (id === 'tray.quit') { await quitScreenshot(); return; }
         const mode = ({
           'tray.area': 'area',
           'tray.record': 'record',
@@ -974,6 +1005,7 @@ export const { activate, deactivate } = definePlugin({
       }
     })) });
     context.subscriptions.push({ dispose: events.onSignal('permissions', () => later(async () => {
+      if (exited) return;
       await registerShortcuts();
       await showTray().catch(() => {});
       await pushSettings();
@@ -1009,6 +1041,7 @@ export const { activate, deactivate } = definePlugin({
     })();
   },
   deactivate() {
+    exited = true;
     if (activeRec?.pollTimer) clearInterval(activeRec.pollTimer);
   },
 });

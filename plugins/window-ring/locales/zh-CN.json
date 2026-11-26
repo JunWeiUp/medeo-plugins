@@ -91,6 +91,7 @@
   "step.release": "松开按键即可应用 · Esc 取消",
   "title": "窗口环",
   "tray.hide": "隐藏此图标",
+  "tray.quit": "退出窗口环",
   "tray.ring": "打开环形菜单",
   "tray.settings": "快捷键与设置…",
   "tray.text": "在菜单栏里使用布局、环形菜单和这些设置。",

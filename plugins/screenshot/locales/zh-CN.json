@@ -138,6 +138,7 @@
   "tray.ocr": "截图识字（OCR）",
   "tray.quick": "快速截图",
   "tray.settings": "设置…",
+  "tray.quit": "退出截图与录屏",
   "action.drive": "存到网盘",
   "drive.prefix": "截图",
   "drive.tip.title": "存到网盘需要「网盘」插件",

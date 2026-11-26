@@ -640,25 +640,28 @@ body.hub-page {
 .st-ov-text.on { border-color: #fff; box-shadow: 0 0 0 2px var(--st-accent), 0 8px 24px rgba(0,0,0,.55); }
 .st-ov-text-lbl { pointer-events: none; overflow: hidden; text-overflow: ellipsis; }
 
-/* Stage corner & edge resize handles for Censor, Text, Zoom boxes */
+/* Stage corner & edge resize handles for Censor, Text, Zoom boxes (generous invisible hit buffers) */
 .st-ov-hdl { position: absolute; z-index: 5; opacity: 0; transition: opacity .12s; }
 .st-ov-censor:hover .st-ov-hdl, .st-ov-censor.on .st-ov-hdl,
 .st-ov-text:hover .st-ov-hdl, .st-ov-text.on .st-ov-hdl,
 .st-zoom-box .st-ov-hdl { opacity: 1; }
 .st-ov-hdl.nw, .st-ov-hdl.ne, .st-ov-hdl.sw, .st-ov-hdl.se {
-  width: 11px; height: 11px; border-radius: 50%; background: #fff;
+  width: 13px; height: 13px; border-radius: 50%; background: #fff;
   border: 2px solid var(--st-accent); box-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.st-ov-hdl.nw::before, .st-ov-hdl.ne::before, .st-ov-hdl.sw::before, .st-ov-hdl.se::before {
+  content: ""; position: absolute; inset: -7px;
 }
 .st-ov-censor .st-ov-hdl.nw, .st-ov-censor .st-ov-hdl.ne,
 .st-ov-censor .st-ov-hdl.sw, .st-ov-censor .st-ov-hdl.se { border-color: #f56b4d; }
-.st-ov-hdl.nw { top: -6px; left: -6px; cursor: nwse-resize; }
-.st-ov-hdl.ne { top: -6px; right: -6px; cursor: nesw-resize; }
-.st-ov-hdl.sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
-.st-ov-hdl.se { bottom: -6px; right: -6px; cursor: nwse-resize; }
-.st-ov-hdl.n { top: -5px; left: 8px; right: 8px; height: 10px; cursor: ns-resize; }
-.st-ov-hdl.s { bottom: -5px; left: 8px; right: 8px; height: 10px; cursor: ns-resize; }
-.st-ov-hdl.w { left: -5px; top: 8px; bottom: 8px; width: 10px; cursor: ew-resize; }
-.st-ov-hdl.e { right: -5px; top: 8px; bottom: 8px; width: 10px; cursor: ew-resize; }
+.st-ov-hdl.nw { top: -7px; left: -7px; cursor: nwse-resize; }
+.st-ov-hdl.ne { top: -7px; right: -7px; cursor: nesw-resize; }
+.st-ov-hdl.sw { bottom: -7px; left: -7px; cursor: nesw-resize; }
+.st-ov-hdl.se { bottom: -7px; right: -7px; cursor: nwse-resize; }
+.st-ov-hdl.n { top: -8px; left: 8px; right: 8px; height: 16px; cursor: ns-resize; }
+.st-ov-hdl.s { bottom: -8px; left: 8px; right: 8px; height: 16px; cursor: ns-resize; }
+.st-ov-hdl.w { left: -8px; top: 8px; bottom: 8px; width: 16px; cursor: ew-resize; }
+.st-ov-hdl.e { right: -8px; top: 8px; bottom: 8px; width: 16px; cursor: ew-resize; }
 
 .st-caption-bar {
   position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 4;
@@ -686,10 +689,11 @@ body.hub-page {
 .st-cam-pip.rect { border-radius: 6px; }
 .st-cam-pip.mirror { transform: scaleX(-1); }
 .st-cam-hdl {
-  position: absolute; width: 13px; height: 13px; border-radius: 50%; z-index: 6;
+  position: absolute; width: 15px; height: 15px; border-radius: 50%; z-index: 6;
   background: #fff; border: 2px solid var(--st-accent); box-shadow: 0 2px 6px rgba(0,0,0,.6);
   opacity: 0; transition: opacity .14s;
 }
+.st-cam-hdl::before { content: ""; position: absolute; inset: -7px; }
 .st-cam-wrap:hover .st-cam-hdl, .st-cam-wrap.active .st-cam-hdl { opacity: 1; }
 .st-cam-wrap.bl .st-cam-hdl { top: -4px; right: -4px; cursor: nesw-resize; }
 .st-cam-wrap.br .st-cam-hdl { top: -4px; left: -4px; cursor: nwse-resize; }
@@ -751,16 +755,16 @@ body.hub-page {
 
 .st-tracks-wrap { position: relative; padding: 6px 14px 8px; min-width: 0; }
 .st-lanes { position: relative; display: flex; flex-direction: column; gap: 5px; cursor: pointer; user-select: none; }
-.st-trow { height: 24px; background: rgba(255,255,255,.03); border-radius: 6px; position: relative; overflow: hidden; }
+.st-trow { height: 24px; background: rgba(255,255,255,.03); border-radius: 6px; position: relative; overflow: visible; }
 .st-trow.clip { height: 38px; background: rgba(255,255,255,.025); }
 
 .st-clip-bar {
-  position: absolute; top: 0; bottom: 0; border-radius: 6px; overflow: hidden;
+  position: absolute; top: 0; bottom: 0; border-radius: 6px; overflow: visible;
   background: linear-gradient(90deg, rgba(109,94,252,.24), rgba(77,133,250,.2) 50%, rgba(109,94,252,.24));
   border: 1px solid rgba(255,255,255,.15);
 }
 .st-wave {
-  position: absolute; inset: 0; pointer-events: none; opacity: .45;
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; opacity: .45;
   background: repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 2px, transparent 2px 6px);
 }
 .st-clip-meta {
@@ -769,21 +773,26 @@ body.hub-page {
   background: rgba(16,16,22,.56); padding: 2px 7px; border-radius: 5px;
 }
 .st-trim-hdl {
-  position: absolute; top: 0; bottom: 0; width: 10px; z-index: 4;
-  background: rgba(255,255,255,.86); cursor: ew-resize; display: grid; place-items: center;
+  position: absolute; top: 0; bottom: 0; width: 12px; z-index: 4;
+  background: rgba(255,255,255,.88); cursor: ew-resize; display: grid; place-items: center;
   transition: background .12s;
 }
+.st-trim-hdl::before { content: ""; position: absolute; top: -4px; bottom: -4px; left: -6px; right: -6px; }
 .st-trim-hdl:hover { background: #fff; }
-.st-trim-hdl::after { content: ""; width: 2px; height: 14px; border-radius: 2px; background: #1b1b1e; }
+.st-trim-hdl::after { content: ""; width: 2.5px; height: 15px; border-radius: 2px; background: #1b1b1e; }
 .st-trim-hdl.in { left: 0; border-radius: 5px 0 0 5px; }
 .st-trim-hdl.out { right: 0; border-radius: 0 5px 5px 0; }
 
 .st-titem {
   position: absolute; top: 2px; bottom: 2px; z-index: 3; border-radius: 5px;
-  padding: 0 11px; font-size: 10.5px; font-weight: 600; color: #fff;
-  display: inline-flex; align-items: center; gap: 4px; cursor: grab;
-  white-space: nowrap; overflow: hidden; box-sizing: border-box;
+  padding: 0; font-size: 10.5px; font-weight: 600; color: #fff;
+  display: inline-flex; align-items: stretch; cursor: grab;
+  white-space: nowrap; overflow: visible; box-sizing: border-box;
   border: 1.5px solid transparent; transition: filter .1s;
+}
+.st-titem-inner {
+  display: inline-flex; align-items: center; gap: 4px; width: 100%; height: 100%;
+  padding: 0 11px; overflow: hidden; border-radius: inherit; box-sizing: border-box; pointer-events: none;
 }
 .st-titem-lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
 .st-titem svg { flex: none; pointer-events: none; }
@@ -798,20 +807,23 @@ body.hub-page {
 .st-titem.censor { background: #f56b4d; }
 .st-titem.caption { background: #8c9eb8; color: #131316; }
 
-/* Left & right track resize handles on every timeline chip */
+/* Generous 20px-wide straddling resize handles on every timeline chip */
 .st-seg-hdl {
-  position: absolute; top: 0; bottom: 0; width: 9px; cursor: ew-resize; z-index: 5;
-  display: grid; place-items: center; opacity: 0; transition: opacity .12s, background .12s;
+  position: absolute; top: -4px; bottom: -4px; width: 20px; cursor: ew-resize; z-index: 6;
+  display: grid; place-items: center; opacity: 0; transition: opacity .12s;
 }
-.st-seg-hdl.l { left: 0; border-radius: 4px 0 0 4px; }
-.st-seg-hdl.r { right: 0; border-radius: 0 4px 4px 0; }
+.st-seg-hdl.l { left: -8px; }
+.st-seg-hdl.r { right: -8px; }
 .st-seg-hdl::after {
-  content: ""; width: 2px; height: 10px; border-radius: 2px; background: rgba(255,255,255,.92);
-  box-shadow: 0 0 3px rgba(0,0,0,.45);
+  content: ""; width: 3px; height: 12px; border-radius: 99px; background: rgba(255,255,255,.94);
+  box-shadow: 0 0 4px rgba(0,0,0,.55); transition: transform .1s, background .1s, height .1s;
 }
-.st-titem.text .st-seg-hdl::after, .st-titem.caption .st-seg-hdl::after { background: rgba(19,19,22,.82); }
-.st-titem:hover .st-seg-hdl, .st-titem.on .st-seg-hdl { opacity: 1; }
-.st-seg-hdl:hover { background: rgba(0,0,0,.24); }
+.st-seg-hdl.l::after { transform: translateX(3px); }
+.st-seg-hdl.r::after { transform: translateX(-3px); }
+.st-titem.text .st-seg-hdl::after, .st-titem.caption .st-seg-hdl::after { background: rgba(19,19,22,.86); }
+.st-titem:hover .st-seg-hdl, .st-titem.on .st-seg-hdl, .st-seg-hdl:hover { opacity: 1; }
+.st-seg-hdl:hover::after { height: 15px; width: 4px; background: #fff; box-shadow: 0 0 0 2px rgba(109,94,252,.65), 0 2px 6px rgba(0,0,0,.6); }
+.st-titem.text .st-seg-hdl:hover::after, .st-titem.caption .st-seg-hdl:hover::after { background: #131316; box-shadow: 0 0 0 2px rgba(255,255,255,.8); }
 
 .st-tl-tip {
   position: absolute; top: -26px; transform: translateX(-50%); z-index: 12;
