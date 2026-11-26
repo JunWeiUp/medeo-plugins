@@ -6,6 +6,9 @@
   "ui": "ui/hub.html",
   "version": "2.0.0",
   "api_version": 1,
+  "engines": {
+    "medeo": ">=0.1.52"
+  },
   "runtime": "node",
   "platforms": [
     "macos"
