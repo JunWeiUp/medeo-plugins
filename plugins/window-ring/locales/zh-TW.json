@@ -91,6 +91,7 @@
   "step.release": "放開按鍵即可套用 · Esc 取消",
   "title": "視窗環",
   "tray.hide": "隱藏此圖示",
+  "tray.quit": "結束視窗環",
   "tray.ring": "打開環形選單",
   "tray.settings": "快速鍵與設定…",
   "tray.text": "在選單列裡使用版面、環形選單和這些設定。",

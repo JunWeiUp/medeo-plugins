@@ -1,31 +1,179 @@
-// Messages between the worker and the two windows (overlay editor, settings). The channel
-// broadcasts to every window of the plugin, so each message names who it is for.
+// Messages between the worker and the plugin windows (overlay, HUD, border, countdown, review, pin, settings).
+// The channel broadcasts to every window of the plugin, so each message names who it is for.
 import type { Rect } from './geometry.ts';
+import type { CaptureDevicesResult, CaptureRecordV2 } from './platform.ts';
+import type { RecordingConfig } from './recording.ts';
 import type { Settings, ShortcutKey } from './settings.ts';
 
-/** area: select then edit · quick: save/copy as soon as the selection is made · ocr: read text · full: whole display. */
-export type Mode = 'area' | 'quick' | 'ocr' | 'full';
-/** drive: to Netdisk, into the folder it used last for Screenshot · drive-to: Netdisk asks where. */
-export type Action = 'copy' | 'save' | 'ocr' | 'drive' | 'drive-to';
+/** area: select then edit · quick: save/copy immediately · ocr: read text · full: whole display · record / record-issue: 120Hz recording. */
+export type Mode = 'area' | 'quick' | 'ocr' | 'full' | 'record' | 'record-issue';
+/** drive: to Netdisk, into the folder it used last · drive-to: Netdisk asks where · pin: float on screen. */
+export type Action = 'copy' | 'save' | 'ocr' | 'drive' | 'drive-to' | 'pin';
 export interface Output { format: 'png' | 'jpeg'; downscale: boolean; enter: 'copy' | 'save'; drive: boolean }
 
 /** One captured display: `width`/`height` in points, the PNG is `width*scale` pixels wide. */
-export interface Shot { seq: number; mode: Mode; width: number; height: number; scale: number; windows: Rect[]; output: Output }
+export interface Shot {
+  seq: number;
+  mode: Mode;
+  width: number;
+  height: number;
+  scale: number;
+  displayId?: number;
+  displayOrigin?: { x: number; y: number };
+  refreshRate?: number;
+  windows: Rect[];
+  output: Output;
+  recording?: RecordingConfig;
+  devices?: CaptureDevicesResult | null;
+}
 export interface OcrResult { text: string; codes: string[] }
+
+export interface HudState {
+  id: string;
+  status: string;
+  paused: boolean;
+  durationMs: number;
+  bytes: number;
+  targetFps: number;
+  actualFps?: number;
+  droppedFrames: number;
+  codec?: string;
+  micLevel: number;
+  sysLevel: number;
+  micEnabled: boolean;
+  sysEnabled: boolean;
+  micMuted: boolean;
+  sysMuted: boolean;
+  cameraEnabled: boolean;
+  cameraFallback: boolean;
+  clicksEnabled: boolean;
+  keystrokesEnabled: boolean;
+  telemetryEvents: number;
+  issueMode: boolean;
+}
+
+export interface BorderState {
+  status: 'countdown' | 'recording' | 'paused';
+  label: string;
+  fps: number;
+  width: number;
+  height: number;
+}
+
+export interface CountdownState {
+  secondsLeft: number;
+  fps: number;
+}
+
+export interface ReviewState {
+  activeRecord: CaptureRecordV2 | null;
+  history: CaptureRecordV2[];
+  config: RecordingConfig;
+  issueMode: boolean;
+  saveDir: string;
+  ffmpegAvailable: boolean;
+  busyAction?: string | null;
+}
+
+export interface PinPayload {
+  id: string;
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+export interface HubRecentScreenshot {
+  name: string;
+  path: string;
+  size: number;
+  mtimeMs: number;
+}
+
+export interface HubState {
+  settings: Settings;
+  saveDir: string;
+  displayRefreshRate: number;
+  recordingActive: boolean;
+  recentRecordings: CaptureRecordV2[];
+  recentScreenshots: HubRecentScreenshot[];
+  devices: CaptureDevicesResult | null;
+}
 
 export type ToOverlay =
   | { type: 'shot'; shot: Shot; parts: number }
   | { type: 'chunk'; seq: number; i: number; data: string }
   | { type: 'ocr'; seq: number; result: OcrResult | null }
+  | { type: 'devices'; devices: CaptureDevicesResult }
   | { type: 'overlay-toast'; key: string; params?: Record<string, string> };
 
 export type FromOverlay =
   | { type: 'overlay-ready' }
-  | { type: 'result'; seq: number; action: Action; mime: string; i: number; parts: number; data: string }
+  | { type: 'result'; seq: number; action: Action; mime: string; i: number; parts: number; data: string; rect?: Rect }
   | { type: 'cancel'; seq: number }
   | { type: 'copy-text'; text: string }
   | { type: 'open-url'; url: string }
-  | { type: 'hide-drive' };
+  | { type: 'hide-drive' }
+  | { type: 'refresh-devices' }
+  | { type: 'update-recording-config'; config: RecordingConfig }
+  | { type: 'open-privacy-pane'; pane: 'screen' | 'mic' | 'camera' | 'input' }
+  | { type: 'recording-started'; id: string; rect: Rect; config: RecordingConfig; issueMode: boolean }
+  | { type: 'recording-error'; error: string };
+
+export type ToHud = { type: 'hud-state'; state: HudState };
+export type FromHud =
+  | { type: 'hud-ready' }
+  | { type: 'hud-pause' }
+  | { type: 'hud-resume' }
+  | { type: 'hud-stop' }
+  | { type: 'hud-cancel' }
+  | { type: 'hud-toggle-mic' }
+  | { type: 'hud-toggle-sys' };
+
+export type ToBorder = { type: 'border-state'; state: BorderState };
+export type FromBorder = { type: 'border-ready' };
+
+export type ToCountdown = { type: 'countdown-state'; state: CountdownState };
+export type FromCountdown = { type: 'countdown-ready' } | { type: 'countdown-cancel' };
+
+export interface ReviewExportDone {
+  ok: boolean;
+  format: 'mp4' | 'gif' | 'issue_bundle';
+  path?: string;
+  name?: string;
+  bytes?: number;
+  width?: number;
+  height?: number;
+  error?: string;
+}
+
+export type ToReview =
+  | { type: 'review-state'; state: ReviewState }
+  | { type: 'review-toast'; tone: 'success' | 'error'; message: string }
+  | { type: 'review-export-progress'; progress: number }
+  | { type: 'review-export-done'; result: ReviewExportDone };
+export type FromReview =
+  | { type: 'review-ready' }
+  | { type: 'review-select'; id: string }
+  | {
+      type: 'review-studio-export';
+      id: string;
+      format: 'mp4' | 'gif' | 'issue_bundle';
+      recipe: Record<string, unknown>;
+      copyFile?: boolean;
+      sendDrive?: boolean;
+      driveChoose?: boolean;
+      revealAfter?: boolean;
+    }
+  | { type: 'review-reveal-path'; filePath: string }
+  | { type: 'review-reveal'; id: string }
+  | { type: 'review-record-new'; issueMode: boolean };
+
+export type ToPin = { type: 'pin-data'; pin: PinPayload };
+export type FromPin =
+  | { type: 'pin-ready'; id: string }
+  | { type: 'pin-close'; id: string }
+  | { type: 'pin-copy'; id: string }
+  | { type: 'pin-save'; id: string };
 
 export interface SettingsState { settings: Settings; saveDir: string; errors: Partial<Record<ShortcutKey, string>> }
 
@@ -36,8 +184,23 @@ export type FromSettings =
   | { type: 'set'; patch: Partial<Settings> }
   | { type: 'choose-folder' }
   | { type: 'reveal-folder' }
-  | { type: 'open-privacy' }
-  | { type: 'capture' };
+  | { type: 'open-privacy'; pane?: 'screen' | 'mic' | 'camera' | 'input' }
+  | { type: 'capture' }
+  | { type: 'record' };
+
+export type ToHub = { type: 'hub-state'; state: HubState };
+export type FromHub =
+  | { type: 'hub-ready' }
+  | { type: 'hub-shoot'; mode: Mode }
+  | { type: 'hub-stop-recording' }
+  | { type: 'hub-update-recording'; patch: Partial<RecordingConfig> }
+  | { type: 'hub-open-review'; id?: string }
+  | { type: 'hub-reveal-file'; filePath?: string }
+  | { type: 'hub-open-settings' }
+  | { type: 'hub-open-privacy'; pane: 'screen' | 'mic' | 'camera' | 'input' };
+
+export type ToWindow = ToOverlay | ToSettings | ToHud | ToBorder | ToCountdown | ToReview | ToPin | ToHub;
+export type FromWindow = FromOverlay | FromSettings | FromHud | FromBorder | FromCountdown | FromReview | FromPin | FromHub;
 
 /** Under the 1 MiB channel limit with room for the envelope. */
 export const CHUNK = 768 * 1024;

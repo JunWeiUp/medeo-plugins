@@ -15,7 +15,10 @@ function screen() {
   let display = null;
   for (let i = 0; i < screens.count; i++) {
     const s = screens.objectAtIndex(i), f = s.frame;
-    const d = { x: f.origin.x, y: mainH - (f.origin.y + f.size.height), width: f.size.width, height: f.size.height, scale: s.backingScaleFactor };
+    const num = s.deviceDescription.objectForKey('NSScreenNumber');
+    const displayId = num && !num.isNil() ? Number(num.unsignedIntValue) : 0;
+    const maxFps = s.respondsToSelector('maximumFramesPerSecond') ? Number(s.maximumFramesPerSecond) : 60;
+    const d = { x: f.origin.x, y: mainH - (f.origin.y + f.size.height), width: f.size.width, height: f.size.height, scale: s.backingScaleFactor, displayId, refreshRate: maxFps > 0 ? maxFps : 60 };
     if (!display) display = d;
     if (m.x >= f.origin.x && m.x <= f.origin.x + f.size.width && m.y >= f.origin.y && m.y <= f.origin.y + f.size.height) { display = d; break; }
   }
@@ -89,10 +92,20 @@ function chooseFolder(prompt, start) {
   } catch (e) { return ''; }
 }
 
+function copyFile(file) {
+  if (!file || !$.NSFileManager.defaultManager.fileExistsAtPath(file)) return 'missing';
+  const url = $.NSURL.fileURLWithPath(file);
+  const pb = $.NSPasteboard.generalPasteboard;
+  pb.clearContents;
+  pb.writeObjects($([url]));
+  return 'ok';
+}
+
 function run(argv) {
   if (argv[0] === 'screen') return screen();
   if (argv[0] === 'copy') return copy(argv[1]);
   if (argv[0] === 'copy-text') return copyText(argv[1]);
+  if (argv[0] === 'copy-file') return copyFile(argv[1]);
   if (argv[0] === 'ocr') return ocr(argv[1]);
   if (argv[0] === 'choose-folder') return chooseFolder(argv[1] || '', argv[2] || '');
   return 'unknown';

@@ -91,6 +91,7 @@
   "step.release": "Let go to apply · Esc cancels",
   "title": "Window Ring",
   "tray.hide": "Hide this icon",
+  "tray.quit": "Quit Window Ring",
   "tray.ring": "Open the ring",
   "tray.settings": "Shortcuts and settings…",
   "tray.text": "Layouts, the ring and these settings from the menu bar.",

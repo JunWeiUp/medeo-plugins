@@ -6,6 +6,29 @@ import { normalize, DEFAULTS } from '../src/settings.ts';
 import { valid, fromKey, symbols } from '../src/shortcuts.ts';
 import { split, CHUNK, joinLines } from '../src/protocol.ts';
 import { formatNumber, constrain } from '../src/annotations.ts';
+import {
+  DEFAULT_RECORDING_CONFIG,
+  buildIssueSummary,
+  buildStartPayload,
+  computeBorderBounds,
+  computeCameraPipBounds,
+  computeHudBounds,
+  detectFpsHealth,
+  effectiveCodec,
+  formatBytes,
+  formatDuration,
+  normalizeRecordingConfig,
+} from '../src/recording.ts';
+import {
+  activeKeystrokes,
+  autoGenerateZooms,
+  buildExportRecipe,
+  computeOutputDuration,
+  createDefaultStudioProject,
+  estimateExportSpec,
+  evaluateZoom,
+  parseTelemetryJsonl,
+} from '../src/studio.ts';
 
 const D = { x: 0, y: 0, w: 1000, h: 800 };
 
@@ -98,4 +121,164 @@ test('shortcuts', () => {
 test('chunks reassemble', () => {
   const s = 'x'.repeat(CHUNK * 2 + 5);
   assert.equal(split(s).length, 3); assert.equal(split(s).join(''), s); assert.deepEqual(split(''), ['']);
+});
+
+test('120Hz recording config normalization and auto HEVC selection', () => {
+  assert.deepEqual(normalizeRecordingConfig(null), DEFAULT_RECORDING_CONFIG);
+  assert.equal(DEFAULT_RECORDING_CONFIG.keystrokes.enabled, true);
+  assert.equal(DEFAULT_RECORDING_CONFIG.keystrokes.shortcutsOnly, false);
+  const cfg = normalizeRecordingConfig({
+    fps: 120,
+    codec: 'auto',
+    quality: 'lossless',
+    countdown: 5,
+    systemAudio: { enabled: true, excludeSelf: false },
+    microphone: { enabled: true, deviceId: 'mic-1', mono: false },
+    camera: { enabled: true, deviceId: 'cam-1', shape: 'rounded', position: 'br', mirror: false },
+    clicks: { enabled: true, color: '#007aff', size: 'lg', sound: true },
+    keystrokes: { enabled: true, shortcutsOnly: false, position: 'bottom-left' },
+  });
+  assert.equal(cfg.fps, 120);
+  assert.equal(cfg.clicks.color, '#007AFF');
+  assert.equal(cfg.camera.shape, 'rounded');
+  assert.equal(cfg.keystrokes.shortcutsOnly, false);
+
+  // Auto codec chooses H.264 for 1080p@120, HEVC for Retina/1440p@120 and 4K@60.
+  assert.equal(effectiveCodec(cfg, 1920, 1080), 'h264');
+  assert.equal(effectiveCodec(cfg, 3024, 1964), 'hevc');
+  assert.equal(effectiveCodec({ ...cfg, fps: 60 }, 3840, 2160), 'hevc');
+  assert.equal(effectiveCodec({ ...cfg, codec: 'h264' }, 3024, 1964), 'h264');
+});
+
+test('recording HUD, border, PiP placement and start payload mapping', () => {
+  const display = { x: 0, y: 0, width: 1512, height: 982 };
+  const region = { x: 200, y: 150, width: 800, height: 500 };
+
+  const hud = computeHudBounds(region, display);
+  assert.ok(hud.y >= region.y + region.height);
+  assert.ok(hud.x >= 0 && hud.x + hud.width <= display.width);
+
+  // Fullscreen region places HUD inside bottom of display cleanly.
+  const fullHud = computeHudBounds(display, display);
+  assert.ok(fullHud.y + fullHud.height <= display.height);
+
+  // Border inflates outside captured pixels while staying inside display.
+  const border = computeBorderBounds(region, display, 4);
+  assert.deepEqual(border, { x: 196, y: 146, width: 808, height: 508 });
+
+  const pip = computeCameraPipBounds(region, 'br', 160, 16);
+  assert.equal(pip.x + pip.width, region.x + region.width - 16);
+  assert.equal(pip.y + pip.height, region.y + region.height - 16);
+
+  // Full display omits rect; cropped region converts to global coordinates.
+  const cfg = normalizeRecordingConfig({ fps: 120, microphone: { enabled: true, deviceId: 'mic-1', mono: true }, camera: { enabled: true, deviceId: 'cam-1', mirror: true }, clicks: { enabled: true }, keystrokes: { enabled: true, shortcutsOnly: true } });
+  const fullPayload = buildStartPayload('src-1', { x: 0, y: 0, w: 1512, h: 982 }, display, cfg);
+  assert.equal(fullPayload.rect, undefined);
+  assert.equal(fullPayload.fps, 120);
+  assert.deepEqual(fullPayload.telemetry, { cursor: true, keystrokes: { enabled: true, shortcuts_only: true } });
+
+  const cropPayload = buildStartPayload('src-1', { x: 100, y: 80, w: 640, h: 480 }, { x: 1512, y: 0, width: 1920, height: 1080 }, cfg);
+  assert.deepEqual(cropPayload.rect, { x: 1612, y: 80, width: 640, height: 480 });
+});
+
+test('FPS health, formatting, and Issue bundle summary', () => {
+  assert.equal(detectFpsHealth(120, 118.5, 0), 'ok');
+  assert.equal(detectFpsHealth(120, 100, 1), 'warn');
+  assert.equal(detectFpsHealth(120, 72, 0), 'drop');
+  assert.equal(detectFpsHealth(120, 119, 12), 'drop');
+  assert.equal(formatDuration(65_000), '01:05');
+  assert.equal(formatDuration(3_661_000), '01:01:01');
+  assert.equal(formatBytes(1536), '1.5 KB');
+
+  const summary = buildIssueSummary(
+    {
+      id: 'rec-1',
+      source_title: 'Built-in Retina Display',
+      status: 'completed',
+      active: false,
+      can_stop: false,
+      can_recover: false,
+      playable: true,
+      duration_ms: 12_400,
+      bytes: 4_500_000,
+      microphone: true,
+      system_audio: true,
+      width: 3024,
+      height: 1964,
+      target_fps: 120,
+      actual_fps: 119.2,
+      dropped_frames: 0,
+      codec: 'hevc',
+      telemetry_events: 420,
+      tracks: { 'capture.mp4': true, 'telemetry.jsonl': true },
+    },
+    DEFAULT_RECORDING_CONFIG,
+    new Date('2026-11-24T12:00:00Z'),
+  );
+  assert.equal(summary.schema, 'medeo.issue-recording.v1');
+  assert.equal(summary.video.target_fps, 120);
+  assert.equal(summary.video.codec, 'hevc');
+  assert.equal(summary.telemetry_events, 420);
+});
+
+test('Studio telemetry parsing, Auto-Zoom clustering, easing, and export recipe', () => {
+  const jsonl = [
+    JSON.stringify({ type: 'header', version: 1, fps: 120 }),
+    JSON.stringify({ type: 'click', t: 1.0, down: true, button: 'left', x: 0.4, y: 0.3 }),
+    JSON.stringify({ type: 'click', t: 1.1, down: false, button: 'left', x: 0.4, y: 0.3 }),
+    JSON.stringify({ type: 'click', t: 1.5, down: true, button: 'left', x: 0.6, y: 0.5 }),
+    JSON.stringify({ type: 'key', t: 2.0, modifiers: ['⌘', '⇧'], label: '⌘⇧S', key_code: 1 }),
+  ].join('\n');
+  const parsed = parseTelemetryJsonl(jsonl);
+  assert.equal(parsed.filter(e => e.kind === 'click').length, 2);
+  assert.equal(parsed.find(e => e.kind === 'key')?.label, '⌘⇧S');
+
+  const zooms = autoGenerateZooms(parsed, 6.0);
+  assert.equal(zooms.length, 1);
+  assert.equal(zooms[0].x, 0.5);
+  assert.equal(zooms[0].y, 0.4);
+  assert.ok(evaluateZoom(1.2, zooms).scale > 1.5);
+  assert.equal(evaluateZoom(0.0, zooms).scale, 1);
+
+  const proj = createDefaultStudioProject(6.0, DEFAULT_RECORDING_CONFIG, true);
+  proj.zooms = zooms;
+  proj.cuts.push({ id: 'c1', start: 2.0, end: 3.0 });
+  proj.speeds.push({ id: 's1', start: 3.0, end: 4.0, rate: 0.5 });
+  proj.freezes.push({ id: 'f1', at: 4.5, duration: 1.0 });
+  proj.overlays.push({ id: 'ov1', kind: 'censor', start: 0.5, end: 2.0, x: 0.2, y: 0.2, w: 0.3, h: 0.15, pixelSize: 16 });
+  proj.overlays.push({ id: 'ov2', kind: 'text', start: 1.0, end: 2.5, x: 0.5, y: 0.15, w: 0.3, h: 0.08, text: 'Step 1', color: '#6D5EFC' });
+  proj.captions.push({ id: 'cap1', start: 0.0, end: 3.0, text: 'Hello world' });
+  proj.showCaptions = true;
+
+  // 6.0 - 1.0 (cut) + 1.0 (0.5x slowmo on 1s span) + 1.0 (freeze) = 7.0s
+  assert.equal(Math.round(computeOutputDuration(proj) * 10) / 10, 7.0);
+
+  // Keystroke filter: shortcutsOnly and per-key exclusion
+  const keyEvents = parseTelemetryJsonl([
+    JSON.stringify({ type: 'key', t: 1.0, modifiers: [], label: 'A', key_code: 0 }),
+    JSON.stringify({ type: 'key', t: 2.0, modifiers: ['⌘'], label: '⌘S', key_code: 1 }),
+  ].join('\n'));
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 2);
+  proj.cursor.shortcutsOnly = true;
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 1);
+  proj.cursor.excludedKeyTimes = [2.0];
+  assert.equal(activeKeystrokes(keyEvents, proj).length, 0);
+
+  const spec = estimateExportSpec(proj, 2560, 1440, 'hevc120');
+  assert.equal(spec.format, 'mp4');
+  assert.equal(spec.fps, 120);
+  assert.equal(spec.codec, 'hevc');
+  assert.ok(spec.estimatedBytes > 0);
+
+  const gifSpec = estimateExportSpec(proj, 2560, 1440, 'gif20');
+  assert.equal(gifSpec.format, 'gif');
+  assert.equal(gifSpec.fps, 20);
+
+  const recipe = buildExportRecipe(proj, 'mp4');
+  assert.equal(recipe.fps, DEFAULT_RECORDING_CONFIG.fps);
+  assert.equal(recipe.zooms.length, 1);
+  assert.equal(recipe.overlays.length, 2);
+  assert.equal(recipe.captions.length, 1);
+  assert.equal(recipe.camera.avoidZoom, true);
+  assert.equal(recipe.cursor.shortcutsOnly, true);
 });
